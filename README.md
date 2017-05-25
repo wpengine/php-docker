@@ -20,7 +20,7 @@ By default, this will run php-fpm and listen for FastCGI connections on port 900
 
 # New Relic
 
-As part of this container we install latest version of the New Relic php agent. The New Relic daemon should be run in a seperate container and the daemon socket should be mounted on /tmp/.newrelic.sock.  The socket location can be changed by setting newrelic.daemon.port.
+As part of this container we install latest version of the New Relic php agent. The New Relic daemon should be run in a separate container and the daemon socket should be mounted on /tmp/.newrelic.sock.  The socket location can be changed by setting newrelic.daemon.port.
 
 ```
 RUN { \
