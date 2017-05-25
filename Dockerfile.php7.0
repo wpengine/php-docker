@@ -83,10 +83,10 @@ RUN set -ex; \
 RUN set -ex; \
 	\
 	NR_VERSION="$( \
-		curl -sS https://download.newrelic.com/php_agent/release/ \
+		curl --connect-timeout 10 -sS https://download.newrelic.com/php_agent/release/ \
 			| sed -n 's/.*>\(.*linux-musl\).tar.gz<.*/\1/p' \
 	)"; \
-	curl -o nr.tar.gz -fSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
+	curl --connect-timeout 10 -o nr.tar.gz -fSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
 	tar -xf nr.tar.gz; \
 	cp $NR_VERSION/agent/x64/newrelic-20151012.so /usr/local/lib/php/extensions/no-debug-non-zts-20151012/newrelic.so; \
 	mkdir -p /var/log/newrelic; \
