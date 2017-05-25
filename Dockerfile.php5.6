@@ -87,8 +87,8 @@ RUN set -ex; \
 		curl -sS https://download.newrelic.com/php_agent/release/ \
 			| sed -n 's/.*>\(.*linux-musl\).tar.gz<.*/\1/p' \
 	)"; \
-    curl -o nr.tar.gz -fSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
-    tar -xf nr.tar.gz; \
+	curl -o nr.tar.gz -fSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
+	tar -xf nr.tar.gz; \
 	cp $NR_VERSION/agent/x64/newrelic-20131226.so /usr/local/lib/php/extensions/no-debug-non-zts-20131226/newrelic.so; \
 	mkdir -p /var/log/newrelic; \
 	rm -rf newrelic-php5* nr.tar.gz; \
