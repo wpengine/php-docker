@@ -14,6 +14,12 @@ By default, this will run php-fpm and listen for FastCGI connections on port 900
 
 # Building
 
+    ./build.sh 5.6
+    ./build.sh 7.0
+    ./build.sh 7.1
+    
+OR 
+    
     docker build -t wpengine/php:7.1 -f Dockerfile.php7.1 .
     docker build -t wpengine/php:7.0 -f Dockerfile.php7.0 .
     docker build -t wpengine/php:5.6 -f Dockerfile.php5.6 .
