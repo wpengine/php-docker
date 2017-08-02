@@ -1,6 +1,6 @@
 # PHP Docker Images
 
-These images extend the [offical php-fpm images](https://github.com/docker-library/php/blob/76a1c5ca161f1ed6aafb2c2d26f83ec17360bc68/7.1/fpm/alpine/Dockerfile) with PHP extensions in use on the WP Engine Platform. They are based on Alpine Linux.
+These images extend the [offical php-fpm images](https://github.com/docker-library/php/blob/76a1c5ca161f1ed6aafb2c2d26f83ec17360bc68/7.1/fpm/alpine/Dockerfile) with PHP extensions in use on the WP Engine Platform. They are based on Debian Linux.
 
 # Updates & Prebuilt Images
 
