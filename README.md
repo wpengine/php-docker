@@ -1,6 +1,6 @@
 # PHP Docker Images
 
-These images extend the [offical php-fpm images](https://github.com/docker-library/php/blob/76a1c5ca161f1ed6aafb2c2d26f83ec17360bc68/7.1/fpm/alpine/Dockerfile) with PHP extensions in use on the WP Engine Platform. They are based on Debian Linux.
+These images extend the [offical php-fpm images](https://github.com/docker-library/php) with PHP extensions in use on the WP Engine Platform.
 
 # Updates & Prebuilt Images
 
@@ -14,15 +14,19 @@ By default, this will run php-fpm and listen for FastCGI connections on port 900
 
 # Building
 
+## Alpine
     ./build.sh 5.6
     ./build.sh 7.0
     ./build.sh 7.1
+## Debian
+    ./build.sh 5.6-debian
+    ./build.sh 7.0-debian
+    ./build.sh 7.1-debian
     
 OR 
     
-    docker build -t wpengine/php:7.1 -f Dockerfile.php7.1 .
     docker build -t wpengine/php:7.0 -f Dockerfile.php7.0 .
-    docker build -t wpengine/php:5.6 -f Dockerfile.php5.6 .
+    docker build -t wpengine/php:7.0-debian -f Dockerfile.php7.0-debian .
 
 # New Relic
 
