@@ -1,0 +1,102 @@
+FROM php:7.0-fpm
+
+RUN set -ex; \
+	\
+ 	apt-get update && apt-get install -y --no-install-recommends \
+		autoconf \
+		build-essential \
+		gettext \
+		libbz2-dev \
+		libicu-dev \
+		libmagick++-dev \
+		libjpeg62-turbo-dev \
+		libmcrypt-dev \
+		libmemcached-dev \
+		libssh2-1-dev \
+		libtool \
+		libxslt1-dev \
+		libldap2-dev \
+		libc-client2007e-dev \
+		libkrb5-dev \
+		pax-utils \
+ 	; \
+ 	docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr; \
+	docker-php-ext-configure imap --with-kerberos --with-imap-ssl; \
+	docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/; \
+ 	docker-php-ext-install \
+ 		bcmath \
+ 		bz2 \
+ 		calendar \
+ 		dba \
+ 		exif \
+ 		gd \
+ 		gettext \
+ 		imap \
+ 		intl \
+ 		ldap \
+ 	 	mcrypt \
+ 		mysqli \
+ 	 	opcache \
+ 	 	pdo_mysql \
+ 	 	shmop \
+ 	 	soap \
+ 	 	sockets \
+ 	 	sysvmsg \
+ 	 	sysvsem \
+ 	 	sysvshm \
+ 	 	wddx \
+ 	 	xmlrpc \
+ 	 	xsl \
+ 	 	zip \
+ 	 ; \
+	printf "\n" | pecl install imagick; \
+	printf "\n" | pecl install memcached; \
+	printf "\n" | pecl install redis; \
+	printf "\n" | pecl install ssh2-1.0; \
+ 	pecl install \
+ 		igbinary \
+ 		msgpack \
+ 	; \
+ 	docker-php-ext-enable --ini-name pecl.ini \
+ 		igbinary \
+ 		imagick \
+ 		memcached \
+ 		msgpack \
+ 		redis \
+ 		ssh2 \
+ 	; \
+ 	rm -rf /tmp/pear/; \
+	dpkg -l | grep -e \-dev | sed 's/ii//g' \
+		| sed 's/rc//g' | sed 's/^ *//;s/ *$//' \
+		| sed 's/ \+ /\t/g' | cut -f 1 | grep -v icu > .dev_packages; \
+	apt-get purge -y $(cat .dev_packages); \
+	rm .dev_packages; \
+	apt-mark manual libjpeg62-turbo libc-client2007e icu-devtools \
+		libicu52 libmcrypt4 libxslt1.1 libmemcached11 libmemcachedutil2 \
+		libmagickwand-6.q16-2; \
+	apt-get autoremove -y --purge;
+
+RUN set -ex; \
+	\
+	NR_VERSION="$( \
+		curl --connect-timeout 10 -sS https://download.newrelic.com/php_agent/release/ \
+			| sed -n 's/.*>\(.*linux\).tar.gz<.*/\1/p' \
+	)"; \
+	curl --connect-timeout 10 -o nr.tar.gz -fSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
+	tar -xf nr.tar.gz; \
+	cp $NR_VERSION/agent/x64/newrelic-20151012.so /usr/local/lib/php/extensions/no-debug-non-zts-20151012/newrelic.so; \
+	mkdir -p /var/log/newrelic; \
+	rm -rf newrelic-php5* nr.tar.gz; \
+	{ \
+		echo "extension=newrelic.so"; \
+	} > /usr/local/etc/php/conf.d/docker-php-ext-newrelic.ini
+
+RUN set -ex; \
+	\
+	curl --connect-timeout 10 -o ioncube.tar.gz -fSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
+	tar -zxvf ioncube.tar.gz; \
+	cp ioncube/ioncube_loader_lin_7.0.so /usr/local/lib/php/extensions/no-debug-non-zts-20151012/ioncube.so; \
+	rm -Rf ioncube*; \
+	{ \
+		echo "zend_extension=ioncube.so"; \
+	} > /usr/local/etc/php/conf.d/docker-php-ext-ioncube.ini
