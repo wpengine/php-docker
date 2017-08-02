@@ -68,10 +68,13 @@ RUN set -ex; \
  	rm -rf /tmp/pear/; \
 	dpkg -l | grep -e \-dev | sed 's/ii//g' \
 		| sed 's/rc//g' | sed 's/^ *//;s/ *$//' \
-		| sed 's/ \+ /\t/g' | cut -f 1 > .dev_packages; \
-	apt-get remove -y $(cat .dev_packages); \
-	apt-get autoremove -y; \
-	rm .dev_packages;
+		| sed 's/ \+ /\t/g' | cut -f 1 | grep -v icu > .dev_packages; \
+	apt-get purge -y $(cat .dev_packages); \
+	rm .dev_packages; \
+	apt-mark manual libjpeg62-turbo libc-client2007e icu-devtools \
+		libicu52 libmcrypt4 libxslt1.1 libmemcached11 libmemcachedutil2 \
+		libmagickwand-6.q16-2; \
+	apt-get autoremove -y --purge;
 
 RUN set -ex; \
 	\
