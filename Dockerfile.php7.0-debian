@@ -56,6 +56,7 @@ RUN set -ex; \
  	pecl install \
  		igbinary \
  		msgpack \
+		uopz \
  	; \
  	docker-php-ext-enable --ini-name pecl.ini \
  		igbinary \
@@ -64,6 +65,7 @@ RUN set -ex; \
  		msgpack \
  		redis \
  		ssh2 \
+		uopz \
  	; \
  	rm -rf /tmp/pear/; \
 	dpkg -l | grep -e \-dev | sed 's/ii//g' \

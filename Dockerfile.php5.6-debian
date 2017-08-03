@@ -57,6 +57,7 @@ RUN set -ex; \
  	pecl install \
  		igbinary \
  		msgpack-0.5.7 \
+		runkit \
  	; \
  	docker-php-ext-enable --ini-name pecl.ini \
  		igbinary \
@@ -64,6 +65,7 @@ RUN set -ex; \
  		memcached \
  		msgpack \
  		redis \
+		runkit \
  		ssh2 \
  	; \
  	rm -rf /tmp/pear/; \
