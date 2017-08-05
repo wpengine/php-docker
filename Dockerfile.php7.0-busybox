@@ -311,14 +311,14 @@ RUN set -ex; \
 	ln -s libffi.so.6.0.4 libffi.so.6; \
 
 	cd /usr/src/php-7.0.22/.deploy; \
-	tar zcvf usr.tar.gz usr; 
+	tar zcvf root.tar.gz usr var; 
 
 FROM busybox:glibc
 
 WORKDIR /
 
-COPY --from=0 /usr/src/php-7.0.22/.deploy/usr.tar.gz .
+COPY --from=0 /usr/src/php-7.0.22/.deploy/root.tar.gz .
 
 RUN set -ex; \
-	tar zxvf usr.tar.gz; \
-	rm usr.tar.gz;
+	tar zxvf root.tar.gz; \
+	rm root.tar.gz;
