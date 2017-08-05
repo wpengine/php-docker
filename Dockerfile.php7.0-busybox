@@ -126,6 +126,7 @@ RUN set -xe; \
 	make -j "$(nproc)";
 
 RUN set -ex; \
+	cd /usr/src/php-7.0.22/; \
 	mkdir pecl; \
 	pecl_install.sh memcached; \
 	pecl_install.sh uopz; \
