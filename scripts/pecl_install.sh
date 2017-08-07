@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SOURCE=/usr/src/php-7.0.22
+SOURCE=/usr/src/php-$PHP_VERSION
 
 cd $SOURCE/pecl
 pecl download $1

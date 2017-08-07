@@ -44,7 +44,9 @@ ENV PHP_LDFLAGS="-Wl,-O1 -Wl,--hash-style=both -pie"
 
 ENV GPG_KEYS 1A4E8B7277C42E53DBA9C7B9BCAA30EA9C0D5763 6E4F6AB321FDC07F2C332E3AC2BF0BC433CFC8B3
 
-ENV PHP_VERSION 7.0.22
+ENV PHP_VERSION=7.0.22
+ENV PHP_SRC=/usr/src/php-$PHP_VERSION
+ENV PHP_EXT_PATH=usr/local/lib/php/extensions/no-debug-non-zts-20151012
 ENV PHP_URL="https://secure.php.net/get/php-7.0.22.tar.xz/from/this/mirror" PHP_ASC_URL="https://secure.php.net/get/php-7.0.22.tar.xz.asc/from/this/mirror"
 ENV PHP_SHA256="408c3fbc235ec940433bfac1f3ed4bf797f61b4a1693b9fb0b6a04b2c1832501" PHP_MD5=""
 
@@ -84,7 +86,8 @@ RUN set -xe; \
 	tar Jxvf php.tar.xz; \
 	rm php.tar.xz.asc php.tar.xz;
 
-ADD pecl_install.sh /usr/local/bin/.
+ADD scripts/pecl_install.sh /usr/local/bin/.
+ADD scripts/scandeps.sh /usr/local/bin/.
 
 RUN set -xe; \
 	buildDeps=" \
@@ -109,10 +112,11 @@ RUN set -xe; \
 		libldap2-dev \
 		libxml2-dev \
 		zlib1g-dev \
+		pax-utils \
 	"; \
 	apt-get update && apt-get install -y $buildDeps --no-install-recommends && rm -rf /var/lib/apt/lists/*; \
 	cp /usr/lib/libc-client.so.2007e.0 /usr/lib/x86_64-linux-gnu/libc-client.a ; \
-	cd /usr/src/php-7.0.22/; \
+	cd /usr/src/php-$PHP_VERSION/; \
 	./configure --build="x86_64-linux-gnu" --enable-fpm --enable-static --disable-shared \
 	--with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path="$PHP_INI_DIR" \
 	--with-config-file-scan-dir="$PHP_INI_DIR/conf.d" --with-bz2 --enable-bcmath \
@@ -126,7 +130,7 @@ RUN set -xe; \
 	make -j "$(nproc)";
 
 RUN set -ex; \
-	cd /usr/src/php-7.0.22/; \
+	cd /usr/src/php-$PHP_VERSION/; \
 	mkdir pecl; \
 	pecl_install.sh memcached; \
 	pecl_install.sh uopz; \
@@ -136,184 +140,69 @@ RUN set -ex; \
 	pecl_install.sh msgpack; \
 	pecl_install.sh redis; \
 
-	cd /usr/src/php-7.0.22; \
+	cd /usr/src/php-$PHP_VERSION; \
 	mkdir .deploy; \
 	cd .deploy; \
 	mkdir -p var/log/newrelic; \
 	mkdir -p usr/lib; \
+	mkdir -p usr/bin; \
 	mkdir -p usr/local/bin; \
 	mkdir -p usr/local/sbin; \
 	mkdir -p usr/local/etc/php/conf.d; \
 	mkdir -p usr/local/include/php/main; \
-	mkdir -p usr/local/lib/php/extensions/no-debug-non-zts-20151012;
+	mkdir -p $PHP_EXT_PATH;
 
 RUN set -ex; \
 	\
-	cd /usr/src/php-7.0.22/.deploy; \
+	cd $PHP_SRC/.deploy; \
 	NR_VERSION="$( \
 		curl --connect-timeout 10 -sS https://download.newrelic.com/php_agent/release/ \
 			| sed -n 's/.*>\(.*linux\).tar.gz<.*/\1/p' \
 	)"; \
 	curl --connect-timeout 10 -o nr.tar.gz -fSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
 	tar -xf nr.tar.gz; \
-	cp $NR_VERSION/agent/x64/newrelic-20151012.so usr/local/lib/php/extensions/no-debug-non-zts-20151012/newrelic.so; \
+	cp $NR_VERSION/agent/x64/newrelic-20151012.so $PHP_EXT_PATH/newrelic.so; \
 	rm -rf newrelic-php5* nr.tar.gz;
 
 RUN set -ex; \
 	\
-	cd /usr/src/php-7.0.22/.deploy; \
+	cd $PHP_SRC/.deploy; \
 	curl --connect-timeout 10 -o ioncube.tar.gz -fSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
 	tar -zxvf ioncube.tar.gz; \
 	mkdir -p /usr/lib/php; \
-	cp ioncube/ioncube_loader_lin_7.0.so usr/local/lib/php/extensions/no-debug-non-zts-20151012/ioncube.so; \
+	cp ioncube/ioncube_loader_lin_7.0.so $PHP_EXT_PATH/ioncube.so; \
 	rm -Rf ioncube*; \
 	{ \
 		echo "zend_extension=ioncube.so"; \
 	} > usr/local/etc/php/conf.d/ioncube.ini
 
 RUN set -ex; \
-	cd /usr/src/php-7.0.22/.deploy; \
+	EXT_DIR="$PHP_SRC/.deploy/$PHP_EXT_PATH"; \
+	cd $PHP_SRC/.deploy; \
 	cp ../sapi/fpm/php-fpm usr/local/sbin/.; \
 	cp ../sapi/cli/php usr/local/bin/.; \
 	cp ../main/php_version.h usr/local/include/php/main/.; \
-	cp /usr/lib/libc-client.so.2007e.0 usr/lib/.; \
-	cp /usr/lib/libmcrypt.so.4.4.8 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libz.so.1.2.8 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/librt-2.23.so usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libpng12.so.0.54.0 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libbz2.so.1.0.4 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libpcre.so.3.13.2 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libdl-2.23.so usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libssl.so.1.0.0 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libgcc_s.so.1 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libpam.so.0.83.1 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libgcrypt.so.20.0.5 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libtinfo.so.5.9 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libbsd.so.0.8.2 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libkeyutils.so.1.5 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libgpg-error.so.0.17.0 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/liblzma.so.5.0.0 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libcrypt-2.23.so usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libaudit.so.1.0.0 usr/lib/.; \
-	cp /lib/x86_64-linux-gnu/libcom_err.so.2.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libmemcached.so.11.0.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libexslt.so.0.8.17 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libedit.so.2.0.53 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libldap_r-2.4.so.2.10.5 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/liblber-2.4.so.2.10.5 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.21 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libjpeg.so.8.0.2 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libxml2.so.2.9.3 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libcurl.so.4.4.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libicui18n.so.55.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libicuuc.so.55.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libicuio.so.55.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libxslt.so.1.1.28 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2.2 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libkrb5.so.3.3 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libsasl2.so.2.0.25 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libgssapi.so.3.0.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libgnutls.so.30.6.2 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libk5crypto.so.3.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libkrb5support.so.0.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libidn.so.11.6.15 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/librtmp.so.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libicudata.so.55.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libheimntlm.so.0.1.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libkrb5.so.26.0.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libasn1.so.8.0.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libhcrypto.so.4.1.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libroken.so.18.1.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libp11-kit.so.0.1.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libtasn1.so.6.5.1 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libnettle.so.6.2 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libhogweed.so.4.2 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libgmp.so.10.3.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libwind.so.0.0.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libheimbase.so.1.0.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libhx509.so.5.0.0 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libsqlite3.so.0.8.6 usr/lib/.; \
-	cp /usr/lib/x86_64-linux-gnu/libffi.so.6.0.4 usr/lib/.; \
+	for d in $(find $PHP_SRC/ext -name *.so | grep modules); \
+		do cp $d $PHP_EXT_PATH/.; \
+	done; \
+	echo "extension=uopz.so" > usr/local/etc/php/conf.d/uopz.ini; \
+	echo "extension=igbinary.so" > usr/local/etc/php/conf.d/igbinary.ini; \
+	echo "extension=imagick.so" > usr/local/etc/php/conf.d/imagick.ini; \
+	echo "extension=msgpack.so" > usr/local/etc/php/conf.d/msgpack.ini; \
+	echo "extension=redis.so" > usr/local/etc/php/conf.d/redis.ini; \
+	echo "extension=memcached.so" > usr/local/etc/php/conf.d/memcached.ini; \
 
-	cd usr/lib; \
-	ln -s libc-client.so.2007e.0 libc-client.so.2007e; \
-	ln -s libmemcached.so.11.0.0 libmemcached.so.11; \
-	ln -s libmemcached.so.11.0.0 libmemcached.so; \
-	ln -s libz.so.1.2.8 libz.so.1; \
-	ln -s libexslt.so.0.8.17 libexslt.so.0; \
-	ln -s libedit.so.2.0.53 libedit.so.2; \
-	ln -s librt-2.23.so librt.so.1; \
-	ln -s libmcrypt.so.4.4.8 libmcrypt.so.4; \
-	ln -s libldap_r-2.4.so.2.10.5 libldap_r-2.4.so.2; \
-	ln -s libldap_r-2.4.so.2.10.5 libldap_r.so; \
-	ln -s liblber-2.4.so.2.10.5 liblber-2.4.so.2; \
-	ln -s libstdc++.so.6.0.21 libstdc++.so.6; \
-	ln -s libpng12.so.0.54.0 libpng12.so.0; \
-	ln -s libjpeg.so.8.0.2 libjpeg.so.8; \
-	ln -s libjpeg.so.8.0.2 libjpeg.so; \
-	ln -s libbz2.so.1.0.4 libbz2.so.1; \
-	ln -s libbz2.so.1.0.4 libbz2.so.1.0; \
-	ln -s libpcre.so.3.13.2 libpcre.so.3; \
-	ln -s libdl-2.23.so libdl.so.2; \
-	ln -s libdl-2.23.so libdl.so; \
-	ln -s libxml2.so.2.9.3 libxml2.so; \
-	ln -s libxml2.so.2.9.3 libxml2.so.2; \
-	ln -s libssl.so.1.0.0 libssl.so; \
-	ln -s libcrypto.so.1.0.0 libcrypto.so; \
-	ln -s libcurl.so.4.4.0 libcurl.so; \
-	ln -s libcurl.so.4.4.0 libcurl.so.4; \
-	ln -s libcurl.so.4 libcurl.so.3; \
-	ln -s libicui18n.so.55.1 libicui18n.so; \
-	ln -s libicui18n.so.55.1 libicui18n.so.55; \
-	ln -s libicuuc.so.55.1 libicuuc.so; \
-	ln -s libicuuc.so.55.1 libicuuc.so.55; \
-	ln -s libicuio.so.55.1 libicuio.so.55; \
-	ln -s libicuio.so.55.1 libicuio.so; \
-	ln -s libxslt.so.1.1.28 libxslt.so.1; \
-	ln -s libxslt.so.1.1.28 libxslt.so; \
-	ln -s libgcc_s.so.1 libgcc_s.so; \
-	ln -s libpam.so.0.83.1 libpam.so.0; \
-	ln -s libgssapi_krb5.so.2.2 libgssapi_krb5.so.2; \
-	ln -s libkrb5.so.3.3 libkrb5.so.3; \
-	ln -s libgcrypt.so.20.0.5 libgcrypt.so.20; \
-	ln -s libtinfo.so.5.9 libtinfo.so.5; \
-	ln -s libbsd.so.0.8.2 libbsd.so.0; \
-	ln -s libbsd.so.0.8.2 libbsd.so; \
-	ln -s libsasl2.so.2.0.25 libsasl2.so; \
-	ln -s libsasl2.so.2.0.25 libsasl2.so.2; \
-	ln -s libgssapi.so.3.0.0 libgssapi.so.3; \
-	ln -s libgnutls.so.30.6.2 libgnutls.so.30; \
-	ln -s liblzma.so.5.0.0 liblzma.so.5; \
-	ln -s libidn.so.11.6.15 libidn.so.11; \
-	ln -s libicudata.so.55.1 libicudata.so.55; \
-	ln -s libicudata.so.55.1 libicudata.so; \
-	ln -s libaudit.so.1.0.0 libaudit.so.1; \
-	ln -s libk5crypto.so.3.1 libk5crypto.so.3; \
-	ln -s libcom_err.so.2.1 libcom_err.so.2; \
-	ln -s libkrb5support.so.0.1 libkrb5support.so.0; \
-	ln -s libkrb5support.so.0.1 libkrb5support.so; \
-	ln -s libkeyutils.so.1.5 libkeyutils.so.1; \
-	ln -s libgpg-error.so.0.17.0 libgpg-error.so.0; \
-	ln -s libheimntlm.so.0.1.0 libheimntlm.so.0; \
-	ln -s libkrb5.so.26.0.0 libkrb5.so.26; \
-	ln -s libasn1.so.8.0.0 libasn1.so.8; \
-	ln -s libhcrypto.so.4.1.0 libhcrypto.so.4; \
-	ln -s libroken.so.18.1.0 libroken.so.18; \
-	ln -s libp11-kit.so.0.1.0 libp11-kit.so.0; \
-	ln -s libtasn1.so.6.5.1 libtasn1.so.6; \
-	ln -s libnettle.so.6.2 libnettle.so.6; \
-	ln -s libhogweed.so.4.2 libhogweed.so.4; \
-	ln -s libgmp.so.10.3.0 libgmp.so.10; \
-	ln -s libwind.so.0.0.0 libwind.so.0; \
-	ln -s libheimbase.so.1.0.0 libheimbase.so.1; \
-	ln -s libhx509.so.5.0.0 libhx509.so.5; \
-	ln -s libsqlite3.so.0.8.6 libsqlite3.so; \
-	ln -s libsqlite3.so.0.8.6 libsqlite3.so.0; \
-	ln -s libcrypt-2.23.so libcrypt.so.1; \
-	ln -s libffi.so.6.0.4 libffi.so.6; \
+	rm -f .rundepscore; \
+	echo "$PHP_SRC/.deploy/usr/local/sbin/php-fpm" >> .rundepscore; \
+	find $PHP_SRC/ext -name *.so | grep modules >> .rundepscore; \
+	scandeps.sh; \
+	for f in $(cat .rundeps); \
+		do cp $f usr/lib/.; \
+	done; \
 
-	cd /usr/src/php-7.0.22/.deploy; \
+	cp /bin/tar usr/bin/.; \
+	cp /bin/gzip usr/bin/.; \
+
 	tar zcvf root.tar.gz usr var; 
 
 FROM busybox:glibc
