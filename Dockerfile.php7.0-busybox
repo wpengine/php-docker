@@ -179,7 +179,9 @@ RUN set -ex; \
 	cp ../sapi/fpm/php-fpm usr/local/sbin/.; \
 	cp ../sapi/cli/php usr/local/bin/.; \
 	mkdir -p $PHP_SRC/ext/ssh2/modules; \
+	mkdir -p $PHP_SRC/ext/opcache/modules; \
 	cp /usr/lib/php/20151012/ssh2.so $PHP_SRC/ext/ssh2/modules/.; \
+	cp /usr/src/php-7.0.22/modules/opcache.so $PHP_SRC/ext/opcache/modules/.; \
 
 	cp ../main/php_version.h usr/local/include/php/main/.; \
 	for d in $(find $PHP_SRC/ext -name *.so | grep modules); \
@@ -195,6 +197,7 @@ RUN set -ex; \
 	echo "extension=redis.so" > $CONF_DIR/redis.ini; \
 	echo "extension=memcached.so" > $CONF_DIR/memcached.ini; \
 	echo "extension=ssh2.so" > $CONF_DIR/ssh2.ini; \
+	echo "zend_extension=opcache.so" > $CONF_DIR/ssh2.ini; \
 	echo "zend_extension=ioncube.so" > $CONF_DIR/ioncube.ini; \
 	\
 	# Put the php-fpm and php binaries in the core runtime dependencies list
