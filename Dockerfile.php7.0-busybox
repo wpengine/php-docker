@@ -13,6 +13,8 @@ ENV PHPIZE_DEPS \
 		pkg-config \
 		php-pear \
 		php7.0-dev \
+		php-ssh2 \
+		php-cli \
 		re2c
 RUN apt-get update && apt-get install -y \
 		$PHPIZE_DEPS \
@@ -130,27 +132,30 @@ RUN set -xe; \
 	make -j "$(nproc)";
 
 RUN set -ex; \
-	cd /usr/src/php-$PHP_VERSION/; \
+	cd $PHP_SRC; \
 	mkdir pecl; \
-	pecl_install.sh memcached; \
-	pecl_install.sh uopz; \
-	pecl_install.sh igbinary; \
-	#pecl_install.sh ssh2; \
-	pecl_install.sh imagick; \
-	pecl_install.sh msgpack; \
-	pecl_install.sh redis; \
+	# Download and build each pecl extension.
+	pecl_install.sh memcached 3.0.3; \
+	pecl_install.sh uopz 5.0.2; \
+	pecl_install.sh igbinary 2.0.1; \
+	pecl_install.sh imagick 3.4.3; \
+	pecl_install.sh msgpack 2.0.2; \
+	pecl_install.sh redis 3.1.3; \
 
-	cd /usr/src/php-$PHP_VERSION; \
-	mkdir .deploy; \
-	cd .deploy; \
-	mkdir -p var/log/newrelic; \
-	mkdir -p usr/lib; \
-	mkdir -p usr/bin; \
-	mkdir -p usr/local/bin; \
-	mkdir -p usr/local/sbin; \
-	mkdir -p usr/local/etc/php/conf.d; \
-	mkdir -p usr/local/include/php/main; \
-	mkdir -p $PHP_EXT_PATH;
+	mkdir $PHP_SRC/.deploy; \
+	cd $PHP_SRC/.deploy; \
+	mkdir -p usr/lib usr/bin usr/local/bin usr/local/sbin usr/local/etc/php/conf.d; \
+	mkdir -p usr/local/include/php/main $PHP_EXT_PATH;
+
+RUN set -ex; \
+	\
+	# Download the ioncube loader and copy the appropriate binary
+	# to the extensions folder
+	cd $PHP_SRC/.deploy; \
+	curl --connect-timeout 10 -o ioncube.tar.gz -fSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
+	tar -zxvf ioncube.tar.gz; \
+	cp ioncube/ioncube_loader_lin_7.0.so $PHP_EXT_PATH/ioncube.so; \
+	rm -Rf ioncube*;
 
 RUN set -ex; \
 	\
@@ -162,55 +167,54 @@ RUN set -ex; \
 	curl --connect-timeout 10 -o nr.tar.gz -fSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
 	tar -xf nr.tar.gz; \
 	cp $NR_VERSION/agent/x64/newrelic-20151012.so $PHP_EXT_PATH/newrelic.so; \
+	mkdir -p var/log/newrelic; \
 	rm -rf newrelic-php5* nr.tar.gz;
-
-RUN set -ex; \
-	\
-	cd $PHP_SRC/.deploy; \
-	curl --connect-timeout 10 -o ioncube.tar.gz -fSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
-	tar -zxvf ioncube.tar.gz; \
-	mkdir -p /usr/lib/php; \
-	cp ioncube/ioncube_loader_lin_7.0.so $PHP_EXT_PATH/ioncube.so; \
-	rm -Rf ioncube*; \
-	{ \
-		echo "zend_extension=ioncube.so"; \
-	} > usr/local/etc/php/conf.d/ioncube.ini
 
 RUN set -ex; \
 	EXT_DIR="$PHP_SRC/.deploy/$PHP_EXT_PATH"; \
 	cd $PHP_SRC/.deploy; \
+	# Copy the php binaries and other required files to the
+	# .deploy staging area, which will become the root directory
+	# of the resulting docker image.
 	cp ../sapi/fpm/php-fpm usr/local/sbin/.; \
 	cp ../sapi/cli/php usr/local/bin/.; \
+	mkdir -p $PHP_SRC/ext/ssh2/modules; \
+	cp /usr/lib/php/20151012/ssh2.so $PHP_SRC/ext/ssh2/modules/.; \
+
 	cp ../main/php_version.h usr/local/include/php/main/.; \
 	for d in $(find $PHP_SRC/ext -name *.so | grep modules); \
 		do cp $d $PHP_EXT_PATH/.; \
 	done; \
-	echo "extension=uopz.so" > usr/local/etc/php/conf.d/uopz.ini; \
-	echo "extension=igbinary.so" > usr/local/etc/php/conf.d/igbinary.ini; \
-	echo "extension=imagick.so" > usr/local/etc/php/conf.d/imagick.ini; \
-	echo "extension=msgpack.so" > usr/local/etc/php/conf.d/msgpack.ini; \
-	echo "extension=redis.so" > usr/local/etc/php/conf.d/redis.ini; \
-	echo "extension=memcached.so" > usr/local/etc/php/conf.d/memcached.ini; \
-
-	rm -f .rundepscore; \
-	echo "$PHP_SRC/.deploy/usr/local/sbin/php-fpm" >> .rundepscore; \
+	\
+	# Activate additional modules by default
+	CONF_DIR=usr/local/etc/php/conf.d; \
+	echo "extension=uopz.so" > $CONF_DIR/uopz.ini; \
+	echo "extension=igbinary.so" > $CONF_DIR/igbinary.ini; \
+	echo "extension=imagick.so" > $CONF_DIR/imagick.ini; \
+	echo "extension=msgpack.so" > $CONF_DIR/msgpack.ini; \
+	echo "extension=redis.so" > $CONF_DIR/redis.ini; \
+	echo "extension=memcached.so" > $CONF_DIR/memcached.ini; \
+	echo "extension=ssh2.so" > $CONF_DIR/ssh2.ini; \
+	echo "zend_extension=ioncube.so" > $CONF_DIR/ioncube.ini; \
+	\
+	# Put the php-fpm and php binaries in the core runtime dependencies list
+	echo "$PHP_SRC/.deploy/usr/local/sbin/php-fpm" > .rundepscore; \
+	echo "$PHP_SRC/.deploy/usr/local/bin/php" >> .rundepscore; \
+	# Iterate over all extensions that have .so files (pecl modules) and scan
+	# for additional runtime dependencies
 	find $PHP_SRC/ext -name *.so | grep modules >> .rundepscore; \
+	# scandeps.sh creates the .rundeps file by doing multiple passes
+	# using scanelf. It gathers the dependencies from the binaries listed
+	# in the .rundepscore file. It then iterates over the resulting list as
+	# many times as is specified by the DEPTH var in the scandeps.sh file.
 	scandeps.sh; \
+	# Grab all the dependencies and toss them in the /usr/lib/ folder.
 	for f in $(cat .rundeps); \
 		do cp $f usr/lib/.; \
-	done; \
-
-	cp /bin/tar usr/bin/.; \
-	cp /bin/gzip usr/bin/.; \
-
-	tar zcvf root.tar.gz usr var; 
+	done;
 
 FROM busybox:glibc
 
 WORKDIR /
 
-COPY --from=builder /usr/src/php-7.0.22/.deploy/root.tar.gz .
-
-RUN set -ex; \
-	tar zxvf root.tar.gz; \
-	rm root.tar.gz;
+COPY --from=builder /usr/src/php-7.0.22/.deploy/. .

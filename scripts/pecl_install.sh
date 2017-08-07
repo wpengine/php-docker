@@ -3,7 +3,7 @@
 SOURCE=/usr/src/php-$PHP_VERSION
 
 cd $SOURCE/pecl
-pecl download $1
+pecl download $1-$2
 tar zxvf $1*.tgz
 rm *.tgz
 mv $1-* ../ext/$1
