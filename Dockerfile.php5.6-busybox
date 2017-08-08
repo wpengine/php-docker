@@ -2,7 +2,6 @@ FROM ubuntu:xenial as builder
 
 ENV PHP_VERSION 5.6.31
 
-ADD scripts/pecl_install.sh /usr/local/bin/.
 ADD scripts/scandeps.sh /usr/local/bin/.
 ADD scripts/download_php.sh /usr/local/bin/.
 
@@ -122,38 +121,19 @@ RUN set -ex; \
 # final image.
 RUN set -ex; \
 	CONF_DIR=usr/local/etc/php/conf.d; \
+
 	cd /usr/src/php-$PHP_VERSION; \
-	mkdir -p .deploy; \
-	cd .deploy; \
-	mkdir -p usr/local/bin usr/lib usr/local/include/php/main ./$PHP_EXT_PATH $CONF_DIR; \
-	cp /usr/local/sbin/php-fpm usr/local/bin/.; \
-	cp /usr/local/bin/php usr/local/bin/.; \
-	cp /usr/local/include/php/main/php_version.h usr/local/include/php/main/.; \
-	cp $PHP_EXT_PATH/*.so .$PHP_EXT_PATH/.; \
+	build_deploy_root.sh; \
 
-	# Put the php-fpm and php binaries in the core runtime dependencies list
-	echo "/usr/local/sbin/php-fpm" > .rundepscore; \
-	echo "/usr/local/bin/php" >> .rundepscore; \
-	find $PHP_EXT_PATH -name *.so >> .rundepscore; \
-	
-	# Generate the .rundeps file
-	scandeps.sh; \
-
-	# Grab all the dependencies and toss them in the /usr/lib/ folder.
-	for f in $(cat .rundeps); \
-		do cp $f usr/lib/.; \
-	done; \
+	cd /usr/src/php-$PHP_VERSION/.deploy; \
 
 	# Activate additional modules by default
-	echo "extension=runkit.so" > $CONF_DIR/runkit.ini; \
-	echo "extension=igbinary.so" > $CONF_DIR/igbinary.ini; \
-	echo "extension=imagick.so" > $CONF_DIR/imagick.ini; \
-	echo "extension=msgpack.so" > $CONF_DIR/msgpack.ini; \
-	echo "extension=redis.so" > $CONF_DIR/redis.ini; \
-	echo "extension=memcached.so" > $CONF_DIR/memcached.ini; \
-	echo "extension=ssh2.so" > $CONF_DIR/ssh2.ini; \
-	echo "zend_extension=opcache.so" > $CONF_DIR/opcache.ini; \
-	echo "zend_extension=ioncube.so" > $CONF_DIR/ioncube.ini;
+	for ext in runkit igbinary imagick msgpack redis memcached ssh2; do \
+		echo "extension=$ext.so" > $CONF_DIR/$ext.ini; \
+	done; \
+	for ext in opcache ioncube; do \
+		echo "zend_extension=$ext.so" > $CONF_DIR/$ext.ini; \
+	done;
 
 FROM busybox:glibc
 
