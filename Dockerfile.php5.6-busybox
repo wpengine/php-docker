@@ -74,7 +74,7 @@ RUN set -xe; \
 	--with-config-file-scan-dir="$PHP_INI_DIR/conf.d" --with-bz2 --enable-bcmath \
 	--enable-calendar --enable-dba --enable-exif --enable-ftp --with-gd --with-gettext \
 	--with-kerberos --with-openssl --with-imap=/usr/lib --with-imap-ssl --with-png-dir=/usr \
-	--with-jpeg-dir=/usr --enable-intl --with-ldap --with-mcrypt --with-mysqli --with-pdo-mysql \
+	--with-jpeg-dir=/usr --enable-intl --with-ldap --with-mcrypt --with-mysql --with-mysqli --with-pdo-mysql \
 	--enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem \
 	--enable-sysvshm --enable-wddx --with-xmlrpc --with-xsl --enable-zip --enable-mbstring \
 	--enable-mysqlnd --with-curl --with-libedit --with-openssl --with-zlib --with-pcre-regex=/usr \
