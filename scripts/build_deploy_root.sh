@@ -1,4 +1,5 @@
 #!/bin/bash
+CONF_DIR=usr/local/etc/php/conf.d;
 
 cd /usr/src/php-$PHP_VERSION;
 mkdir -p .deploy;
@@ -20,4 +21,14 @@ scandeps.sh;
 # Grab all the dependencies and toss them in the /usr/lib/ folder.
 for f in $(cat .rundeps);
     do cp $f usr/lib/.;
-done; \
+done;
+
+# Activate additional modules by default
+for ext in $PECL_MODULES; do
+    ext_name=$(echo $ext | sed 's/-.*//g');
+    echo "extension=$ext_name.so" > $CONF_DIR/$ext_name.ini;
+done;
+
+for ext in opcache ioncube; do
+    echo "zend_extension=$ext.so" > $CONF_DIR/$ext.ini;
+done;
