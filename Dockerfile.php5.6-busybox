@@ -1,0 +1,171 @@
+FROM ubuntu:xenial as builder
+
+ENV PHP_VERSION 5.6.31
+
+ADD scripts/pecl_install.sh /usr/local/bin/.
+ADD scripts/scandeps.sh /usr/local/bin/.
+ADD scripts/download_php.sh /usr/local/bin/.
+
+RUN set -ex; \
+	\
+ 	apt-get update && apt-get install -y --no-install-recommends \
+		autoconf \
+		build-essential \
+		ca-certificates \
+		curl \
+		dirmngr \
+		dpkg-dev \
+		file \
+		g++ \
+		gcc \
+		gettext \
+		gnupg2 \
+		libbsd-dev \
+		libbz2-dev \
+		libc-client2007e-dev \
+		libc-dev \
+		libcurl3 \
+		libcurl3-dev \
+		libedit-dev \
+		libedit2 \
+		libicu-dev \
+		libkrb5-dev \
+		libldap2-dev \
+		libmagick++-dev \
+		libmcrypt-dev \
+		libmemcached-dev \
+		libpcre3-dev \
+		libsqlite3-0 \
+		libssh2-1-dev \
+		libtinfo-dev \
+		libtool \
+		libxml2 \
+		libxslt1-dev \
+		make \
+		mlocate \
+		pax-utils \
+		pkg-config \
+		re2c \
+		wget \
+		xz-utils \
+ 	; \
+	# Fix for missing library, required later during php configure/make.
+	cp /usr/lib/libc-client.so.2007e.0 /usr/lib/x86_64-linux-gnu/libc-client.a;
+
+ENV PHP_INI_DIR /usr/local/etc/php
+RUN mkdir -p $PHP_INI_DIR/conf.d
+
+ENV PHP_EXT_PATH=/usr/local/lib/php/extensions/no-debug-non-zts-20131226
+ENV PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O2"
+ENV PHP_CPPFLAGS="$PHP_CFLAGS"
+ENV PHP_LDFLAGS="-Wl,-O1 -Wl,--hash-style=both -pie"
+ENV GPG_KEYS 0BD78B5F97500D450838F95DFE857D9A90D90EC1 6E4F6AB321FDC07F2C332E3AC2BF0BC433CFC8B3
+
+ENV PHP_URL="https://secure.php.net/get/php-$PHP_VERSION.tar.xz/from/this/mirror" PHP_ASC_URL="https://secure.php.net/get/php-$PHP_VERSION.tar.xz.asc/from/this/mirror"
+ENV PHP_SHA256="c464af61240a9b7729fabe0314cdbdd5a000a4f0c9bd201f89f8628732fe4ae4" PHP_MD5=""
+
+# Build and install core PHP 5.6
+RUN set -xe; \
+	mkdir -p /usr/src; \
+	cd /usr/src; \
+	download_php.sh; \
+	cd /usr/src/php-$PHP_VERSION/; \
+	./configure --build="x86_64-linux-gnu" --enable-fpm --enable-static --disable-shared \
+	--with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path="$PHP_INI_DIR" \
+	--with-config-file-scan-dir="$PHP_INI_DIR/conf.d" --with-bz2 --enable-bcmath \
+	--enable-calendar --enable-dba --enable-exif --enable-ftp --with-gd --with-gettext \
+	--with-kerberos --with-openssl --with-imap=/usr/lib --with-imap-ssl --with-png-dir=/usr \
+	--with-jpeg-dir=/usr --enable-intl --with-ldap --with-mcrypt --with-mysqli --with-pdo-mysql \
+	--enable-shmop --enable-soap --enable-sockets --enable-sysvmsg --enable-sysvsem \
+	--enable-sysvshm --enable-wddx --with-xmlrpc --with-xsl --enable-zip --enable-mbstring \
+	--enable-mysqlnd --with-curl --with-libedit --with-openssl --with-zlib --with-pcre-regex=/usr \
+	--with-pear --with-libdir="lib/x86_64-linux-gnu"; \
+	make -j "$(nproc)"; \
+	make install;
+
+# Build and install pecl modules
+ RUN set -xe; \
+ 	cd /usr/src/php-$PHP_VERSION; \
+	echo "\n" | pecl install memcached-2.2.0; \
+	# /usr/local/lib/php/extensions/no-debug-non-zts-20131226/memcached.so
+	echo "\n" | pecl install ssh2-0.13; \
+	# /usr/local/lib/php/extensions/no-debug-non-zts-20131226/ssh2.so
+	pecl install msgpack-0.5.7; \
+	# /usr/local/lib/php/extensions/no-debug-non-zts-20131226/msgpack.so
+	pecl install igbinary-2.0.1; \
+	# /usr/local/lib/php/extensions/no-debug-non-zts-20131226/igbinary.so
+	echo "\n" | pecl install imagick-3.4.3; \
+	# /usr/local/lib/php/extensions/no-debug-non-zts-20131226/imagick.so
+	echo "\n" | pecl install redis-3.1.3; \
+	# /usr/local/lib/php/extensions/no-debug-non-zts-20131226/redis.so
+	pecl install runkit-1.0.4;
+	# /usr/local/lib/php/extensions/no-debug-non-zts-20131226/runkit.so
+
+# Download the ioncube loader extension
+RUN set -ex; \
+	\
+	cd /usr/src/php-$PHP_VERSION; \
+	curl --connect-timeout 10 -o ioncube.tar.gz -fSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
+	tar -zxvf ioncube.tar.gz; \
+	cp ioncube/ioncube_loader_lin_5.6.so $PHP_EXT_PATH/ioncube.so; \
+	rm -Rf ioncube*;
+
+# Download the New Relic extension
+RUN set -ex; \
+	\
+	cd /usr/src/php-$PHP_VERSION; \
+	NR_VERSION="$( \
+		curl --connect-timeout 10 -sS https://download.newrelic.com/php_agent/release/ \
+			| sed -n 's/.*>\(.*linux\).tar.gz<.*/\1/p' \
+	)"; \
+	curl --connect-timeout 10 -o nr.tar.gz -fSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
+	tar -xf nr.tar.gz; \
+	cp $NR_VERSION/agent/x64/newrelic-20131226.so $PHP_EXT_PATH/newrelic.so; \
+	rm -Rf newrelic-php5* nr.tar.gz;
+
+# Gather required runtime files from installed locations and copy them
+# to the .deploy folder which will serve as the new root folder for the 
+# final image.
+RUN set -ex; \
+	CONF_DIR=usr/local/etc/php/conf.d; \
+	cd /usr/src/php-$PHP_VERSION; \
+	mkdir -p .deploy; \
+	cd .deploy; \
+	mkdir -p usr/local/bin usr/lib usr/local/include/php/main ./$PHP_EXT_PATH $CONF_DIR; \
+	cp /usr/local/sbin/php-fpm usr/local/bin/.; \
+	cp /usr/local/bin/php usr/local/bin/.; \
+	cp /usr/local/include/php/main/php_version.h usr/local/include/php/main/.; \
+	cp $PHP_EXT_PATH/*.so .$PHP_EXT_PATH/.; \
+
+	# Put the php-fpm and php binaries in the core runtime dependencies list
+	echo "/usr/local/sbin/php-fpm" > .rundepscore; \
+	echo "/usr/local/bin/php" >> .rundepscore; \
+	find $PHP_EXT_PATH -name *.so >> .rundepscore; \
+	
+	# Generate the .rundeps file
+	scandeps.sh; \
+
+	# Grab all the dependencies and toss them in the /usr/lib/ folder.
+	for f in $(cat .rundeps); \
+		do cp $f usr/lib/.; \
+	done; \
+
+	# Activate additional modules by default
+	echo "extension=runkit.so" > $CONF_DIR/runkit.ini; \
+	echo "extension=igbinary.so" > $CONF_DIR/igbinary.ini; \
+	echo "extension=imagick.so" > $CONF_DIR/imagick.ini; \
+	echo "extension=msgpack.so" > $CONF_DIR/msgpack.ini; \
+	echo "extension=redis.so" > $CONF_DIR/redis.ini; \
+	echo "extension=memcached.so" > $CONF_DIR/memcached.ini; \
+	echo "extension=ssh2.so" > $CONF_DIR/ssh2.ini; \
+	echo "zend_extension=opcache.so" > $CONF_DIR/opcache.ini; \
+	echo "zend_extension=ioncube.so" > $CONF_DIR/ioncube.ini;
+
+FROM busybox:glibc
+
+# Apparently the env does not get passed along in a multistage build
+ENV PHP_VERSION=5.6.31
+
+WORKDIR /
+
+COPY --from=builder /usr/src/php-5.6.31/.deploy/. .
