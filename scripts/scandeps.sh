@@ -18,5 +18,5 @@ do
         sort -u .rundeps.pass.$p > .rundeps.sorted.$p
 done
 
-mv .rundeps.sorted.$DEPTH .rundeps
+comm .rundeps.sorted.$DEPTH <(sort .rundepscore) -3 > .rundeps
 rm .rundeps.*

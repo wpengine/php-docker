@@ -180,12 +180,10 @@ RUN set -ex; \
 	# of the resulting docker image.
 	cp ../sapi/fpm/php-fpm usr/local/sbin/.; \
 	cp ../sapi/cli/php usr/local/bin/.; \
-	mkdir -p $PHP_SRC/ext/ssh2/modules; \
-	mkdir -p $PHP_SRC/ext/opcache/modules; \
-	cp /usr/lib/php/20151012/ssh2.so $PHP_SRC/ext/ssh2/modules/.; \
-	cp /usr/src/php-7.0.22/modules/opcache.so $PHP_SRC/ext/opcache/modules/.; \
-
+	cp /usr/lib/php/20151012/ssh2.so $PHP_EXT_PATH/.; \
+	cp /usr/src/php-7.0.22/modules/opcache.so $PHP_EXT_PATH/.; \
 	cp ../main/php_version.h usr/local/include/php/main/.; \
+
 	for d in $(find $PHP_SRC/ext -name *.so | grep modules); \
 		do cp $d $PHP_EXT_PATH/.; \
 	done; \
@@ -206,7 +204,8 @@ RUN set -ex; \
 	echo "$PHP_SRC/.deploy/usr/local/sbin/php-fpm" > .rundepscore; \
 	echo "$PHP_SRC/.deploy/usr/local/bin/php" >> .rundepscore; \
 	# Iterate over all extensions that have .so files (pecl modules) and scan
-	# for additional runtime dependencies
+	# for additional runtime dependencies. Files in the .rundepscore do NOT
+	# get copied to the /usr/lib folder. Only the .rundeps get copied.
 	find $PHP_SRC/ext -name *.so | grep modules >> .rundepscore; \
 	# scandeps.sh creates the .rundeps file by doing multiple passes
 	# using scanelf. It gathers the dependencies from the binaries listed
