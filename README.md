@@ -14,19 +14,19 @@ By default, this will run php-fpm and listen for FastCGI connections on port 900
 
 # Building
 
-## Alpine
+## Alpine (musl)
     ./build.sh 5.6
     ./build.sh 7.0
     ./build.sh 7.1
-## Debian
-    ./build.sh 5.6-debian
-    ./build.sh 7.0-debian
-    ./build.sh 7.1-debian
-    
+## Debian (glibc)
+    ./build.sh 5.6-busybox
+    ./build.sh 7.0-busybox
+    ./build.sh 7.1-busybox
+
 OR 
     
     docker build -t wpengine/php:7.0 -f Dockerfile.php7.0 .
-    docker build -t wpengine/php:7.0-debian -f Dockerfile.php7.0-debian .
+    docker build -t wpengine/php:7.0-busybox -f Dockerfile.php7.0-busybox .
 
 # New Relic
 
@@ -34,7 +34,6 @@ As part of this container we install latest version of the New Relic php agent. 
 
 ```
 RUN { \
-		echo "extension=newrelic.so"; \
 		echo "newrelic.daemon.port=/var/tmp/newrelic.sock"; \
 	} > /usr/local/etc/php/conf.d/docker-php-ext-newrelic.ini
 ```
