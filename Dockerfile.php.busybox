@@ -133,9 +133,12 @@ RUN set -ex; \
 		echo "zend_extension=$ext.so" > $CONF_DIR/$ext.ini; \
 	done; \
 	\
-	echo "extension=newrelic.so" > $CONF_DIR/newrelic.ini; \
-	echo "newrelic.daemon.port=/run/newrelic/newrelic.sock" >> $CONF_DIR/newrelic.ini; \
-	echo "uopz.enable_exit=1" >> $CONF_DIR/uopz.ini;
+	echo "uopz.enable_exit=1" >> $CONF_DIR/uopz.ini; \
+	echo "opcache.max_accelerated_files=50000" >> $CONF_DIR/opcache.ini; \
+	{ \
+		echo "extension=newrelic.so"; \
+		echo "newrelic.daemon.port=/run/newrelic/newrelic.sock"; \
+	} >> $CONF_DIR/newrelic.ini;
 
 FROM busybox:glibc
 
