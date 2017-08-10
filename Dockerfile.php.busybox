@@ -106,7 +106,7 @@ RUN set -ex; \
 	cd .deploy; \
 	# Make the directories we will need at runtime
 	mkdir -p usr/local/bin usr/local/sbin usr/lib usr/local/include/php/main ./$PHP_EXT_PATH $CONF_DIR; \
-	mkdir -p var/lib/php/sessions var/lib/php/opcache run/php \
+	mkdir -p var/lib/php/sessions var/lib/php/opcache run/php; \
 	cp /usr/local/sbin/php-fpm usr/local/sbin/.; \
 	cp /usr/local/include/php/main/php_version.h usr/local/include/php/main/.; \
 	cp $PHP_EXT_PATH/*.so .$PHP_EXT_PATH/.; \
