@@ -5,6 +5,7 @@ cd /usr/src/php-$PHP_VERSION;
 mkdir -p .deploy;
 cd .deploy;
 mkdir -p usr/local/bin usr/local/sbin usr/lib usr/local/include/php/main ./$PHP_EXT_PATH $CONF_DIR;
+mkdir -p var/lib/php/sessions var/lib/php/opcache run/php
 cp /usr/local/sbin/php-fpm usr/local/sbin/.;
 cp /usr/local/include/php/main/php_version.h usr/local/include/php/main/.;
 cp $PHP_EXT_PATH/*.so .$PHP_EXT_PATH/.;
@@ -30,3 +31,7 @@ done;
 for ext in opcache ioncube; do
     echo "zend_extension=$ext.so" > $CONF_DIR/$ext.ini;
 done;
+
+echo "extension=newrelic.so" > $CONF_DIR/newrelic.ini;
+echo "newrelic.daemon.port=/run/newrelic/newrelic.sock" >> $CONF_DIR/newrelic.ini;
+echo "uopz.enable_exit=1" >> $CONF_DIR/uopz.ini;
