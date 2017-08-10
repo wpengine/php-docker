@@ -10,8 +10,6 @@ ARG GPG_KEY2
 ARG PHP_SHA256
 ARG PHP_EXT_SUFFIX
 
-ENV GPG_KEYS $GPG_KEY1 $GPG_KEY2
-
 ENV PHP_INI_DIR /usr/local/etc/php
 RUN mkdir -p $PHP_INI_DIR/conf.d
 
@@ -21,7 +19,6 @@ ENV PHP_CPPFLAGS="$PHP_CFLAGS"
 ENV PHP_LDFLAGS="-Wl,-O1 -Wl,--hash-style=both -pie"
 
 ENV PHP_URL="https://secure.php.net/get/php-$PHP_VERSION.tar.xz/from/this/mirror" PHP_ASC_URL="https://secure.php.net/get/php-$PHP_VERSION.tar.xz.asc/from/this/mirror"
-ENV PHP_MD5=""
 
 ADD scripts/*.sh /usr/local/bin/
 
@@ -41,7 +38,25 @@ RUN set -ex; \
 	# Build and install core PHP
 	mkdir -p /usr/src; \
 	cd /usr/src; \
-	download_php.sh; \
+	\
+	# Download and verify PHP source
+	wget -O php.tar.xz "$PHP_URL"; \
+	\
+	if [ -n "$PHP_SHA256" ]; then \
+		echo "$PHP_SHA256 *php.tar.xz" | sha256sum -c -; \
+	fi; \
+	\
+	if [ -n "$PHP_ASC_URL" ]; then \
+		wget -O php.tar.xz.asc "$PHP_ASC_URL"; \
+		export GNUPGHOME="$(mktemp -d)"; \
+		gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$GPG_KEY1"; \
+		gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$GPG_KEY2"; \
+		gpg --batch --verify php.tar.xz.asc php.tar.xz; \
+		rm -rf "$GNUPGHOME"; \
+	fi; \
+	tar Jxvf php.tar.xz; \
+	rm php.tar.xz.asc php.tar.xz; \
+	\
 	cd /usr/src/php-$PHP_VERSION/; \
 	ADDITIONAL_OPTIONS=''; \
 	if [ $VERSION = "5.6" ]; then ADDITIONAL_OPTIONS="--with-mysql"; fi; \
@@ -85,7 +100,42 @@ RUN set -ex; \
 	# Gather required runtime files from installed locations and copy them
 	# to the .deploy folder which will serve as the new root folder for the 
 	# final image.
-	build_deploy_root.sh;
+	CONF_DIR=usr/local/etc/php/conf.d; \
+	\
+	mkdir -p .deploy; \
+	cd .deploy; \
+	# Make the directories we will need at runtime
+	mkdir -p usr/local/bin usr/local/sbin usr/lib usr/local/include/php/main ./$PHP_EXT_PATH $CONF_DIR; \
+	mkdir -p var/lib/php/sessions var/lib/php/opcache run/php \
+	cp /usr/local/sbin/php-fpm usr/local/sbin/.; \
+	cp /usr/local/include/php/main/php_version.h usr/local/include/php/main/.; \
+	cp $PHP_EXT_PATH/*.so .$PHP_EXT_PATH/.; \
+	\
+	# Put the php-fpm and php binaries in the core runtime dependencies list
+	echo "/usr/local/sbin/php-fpm" > .rundepscore; \
+	find $PHP_EXT_PATH -name *.so >> .rundepscore; \
+	\
+	# Generate the .rundeps file
+	scandeps.sh; \
+
+	# Grab all the dependencies and toss them in the /usr/lib/ folder.
+	for f in $(cat .rundeps); \
+		do cp $f usr/lib/.; \
+	done; \
+
+	# Activate additional modules by default
+	for ext in $PECL_MODULES; do \
+		ext_name=$(echo $ext | sed 's/-.*//g'); \
+		echo "extension=$ext_name.so" > $CONF_DIR/$ext_name.ini; \
+	done; \
+	\
+	for ext in opcache ioncube; do \
+		echo "zend_extension=$ext.so" > $CONF_DIR/$ext.ini; \
+	done; \
+	\
+	echo "extension=newrelic.so" > $CONF_DIR/newrelic.ini; \
+	echo "newrelic.daemon.port=/run/newrelic/newrelic.sock" >> $CONF_DIR/newrelic.ini; \
+	echo "uopz.enable_exit=1" >> $CONF_DIR/uopz.ini;
 
 FROM busybox:glibc
 
