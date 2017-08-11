@@ -106,13 +106,15 @@ RUN set -ex; \
 	cd .deploy; \
 	# Make the directories we will need at runtime
 	mkdir -p usr/local/bin usr/local/sbin usr/lib usr/local/include/php/main ./$PHP_EXT_PATH $CONF_DIR; \
-	mkdir -p var/lib/php/sessions var/lib/php/opcache run/php; \
+	mkdir -p var/lib/php/sessions var/lib/php/opcache run/php usr/local/var/log; \
+	mkdir -p usr/local/etc/php-fpm.d; \
 	cp /usr/local/sbin/php-fpm usr/local/sbin/.; \
 	cp /usr/local/include/php/main/php_version.h usr/local/include/php/main/.; \
 	cp $PHP_EXT_PATH/*.so .$PHP_EXT_PATH/.; \
 	# Use the default configs provided by the build. Downstream containers can overwrite
 	# these as needed.
-	cp /usr/local/etc/php-fpm.conf.default usr/local/etc/php-fpm.conf; \
+	sed 's!=NONE/!=!g' /usr/local/etc/php-fpm.conf.default | tee php-fpm.conf > /dev/null; \
+	mv php-fpm.conf usr/local/etc/.; \
 	cp /usr/src/php-$PHP_VERSION/php.ini-development usr/local/etc/php/php.ini; \
 	\
 	# Put the php-fpm and php binaries in the core runtime dependencies list
