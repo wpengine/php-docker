@@ -155,7 +155,10 @@ ARG PHP_VERSION
 WORKDIR /
 
 COPY --from=builder /usr/src/php-$PHP_VERSION/.deploy/. .
+# Some minimal config for php-fpm
 COPY php-fpm.conf-default /usr/local/etc/php-fpm.conf
+COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
+RUN mkdir -p /usr/local/var/log
 
 EXPOSE 9000
 CMD ["php-fpm"]
