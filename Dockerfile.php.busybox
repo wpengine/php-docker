@@ -127,13 +127,18 @@ RUN set -ex; \
 	for ext in $PECL_MODULES; do \
 		ext_name=$(echo $ext | sed 's/-.*//g'); \
 		echo "extension=$ext_name.so" > $CONF_DIR/$ext_name.ini; \
+		if [ $ext_name = "runkit" ]; then \
+			echo "runkit.internal_override=1" >> $CONF_DIR/runkit.ini; \
+		fi; \
+		if [ $ext_name = "uopz" ]; then \
+			echo "uopz.enable_exit=1" >> $CONF_DIR/uopz.ini; \
+		fi; \
 	done; \
 	\
 	for ext in opcache ioncube; do \
 		echo "zend_extension=$ext.so" > $CONF_DIR/$ext.ini; \
 	done; \
 	\
-	echo "uopz.enable_exit=1" >> $CONF_DIR/uopz.ini; \
 	echo "opcache.max_accelerated_files=50000" >> $CONF_DIR/opcache.ini; \
 	{ \
 		echo "extension=newrelic.so"; \
