@@ -1,29 +1,21 @@
 [global]
-; This will stay as daemonize = no since gophpr is responsible for keeping the process running
-; and restarting it if it fails.
 daemonize = no
+error_log = /proc/self/fd/2
 
 [www]
-listen = /run/php/php-cgi.sock
+listen = [::]:9000
 
 listen.owner = www-data
 listen.group = www-data
 
-access.log = /dev/null
-access.format = %R - %u %t %m %r%Q%q %s -
-
 user = www-data
 group = www-data
+
+access.log = /proc/self/fd/2
 
 pm = static
 pm.max_children = 1
 pm.start_servers = 1
-
-; The timeout for serving a single request after which the worker process would be killed
 request_terminate_timeout = 65s
-
-; The number of requests each child process should execute before respawning.
-; This can be useful to work around memory leaks in 3rd party libraries. For endless request processing specify '0'.
 pm.max_requests = 1000
-
-catch_workers_output = no
+catch_workers_output = yes
