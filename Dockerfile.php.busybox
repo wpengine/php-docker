@@ -106,7 +106,11 @@ RUN set -ex; \
 	cd .deploy; \
 	# Make the directories we will need at runtime
 	mkdir -p usr/local/bin usr/local/sbin usr/lib usr/local/include/php/main ./$PHP_EXT_PATH $CONF_DIR; \
-	mkdir -p var/lib/php/sessions var/lib/php/opcache run/php; \
+	mkdir -p var/lib/php/sessions var/lib/php/opcache run/php usr/local/var/log; \
+	{ \
+		echo "[global]"; \
+		echo "include=etc/php-fpm.d/*.conf"; \
+	} > usr/local/etc/php-fpm.conf; \
 	cp /usr/local/sbin/php-fpm usr/local/sbin/.; \
 	cp /usr/local/include/php/main/php_version.h usr/local/include/php/main/.; \
 	cp $PHP_EXT_PATH/*.so .$PHP_EXT_PATH/.; \
@@ -156,9 +160,7 @@ WORKDIR /
 
 COPY --from=builder /usr/src/php-$PHP_VERSION/.deploy/. .
 # Some minimal config for php-fpm
-COPY php-fpm.conf-default /usr/local/etc/php-fpm.conf
 COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
-RUN mkdir -p /usr/local/var/log
 
 EXPOSE 9000
 CMD ["php-fpm"]
