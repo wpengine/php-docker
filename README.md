@@ -1,6 +1,6 @@
 # PHP Docker Images
 
-These docker images provide each major version of PHP (currently 5.6, 70 and 7.1) with support for various extensions required for WordPress and the WP Engine Platform.
+These docker images provide each major version of PHP (currently 5.6, 7.0 and 7.1) with support for various extensions required for WordPress and the WP Engine Platform.
 
 There are two main groups of images provided here:
  - Alpine
