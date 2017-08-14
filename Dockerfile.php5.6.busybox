@@ -1,0 +1,23 @@
+FROM ubuntu:xenial as builder
+
+ENV PHP_VERSION=5.6.31
+ENV PECL_MODULES imagick-3.4.3 redis-3.1.3 igbinary-2.0.1 memcached-2.2.0 ssh2-0.13 msgpack-0.5.7 runkit-1.0.4
+ENV VERSION=5.6
+ENV GPG_KEYS 0BD78B5F97500D450838F95DFE857D9A90D90EC1 6E4F6AB321FDC07F2C332E3AC2BF0BC433CFC8B3
+ENV PHP_SHA256=c464af61240a9b7729fabe0314cdbdd5a000a4f0c9bd201f89f8628732fe4ae4
+ENV PHP_EXT_SUFFIX=20131226
+
+ADD scripts/*.sh /usr/local/bin/
+
+RUN build-php.sh
+
+FROM busybox:glibc
+ENV PHP_VERSION=5.6.31
+
+WORKDIR /
+COPY --from=builder /usr/src/php-$PHP_VERSION/.deploy/. .
+# Some minimal config for php-fpm
+COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
+
+EXPOSE 9000
+CMD ["php-fpm"]
