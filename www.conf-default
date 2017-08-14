@@ -1,0 +1,21 @@
+[global]
+daemonize = no
+error_log = /proc/self/fd/2
+
+[www]
+listen = [::]:9000
+
+listen.owner = www-data
+listen.group = www-data
+
+user = www-data
+group = www-data
+
+access.log = /proc/self/fd/2
+
+pm = static
+pm.max_children = 1
+pm.start_servers = 1
+request_terminate_timeout = 65s
+pm.max_requests = 1000
+catch_workers_output = yes

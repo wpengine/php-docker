@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# usage: build.sh <5.6 | 7.0 | 7.1>
-
 # setting default version to 7.1
 VERSION=${1:-7.1}
-echo Building $VERSION...
-docker build -t wpengine/php:$VERSION -f Dockerfile.php$VERSION .
+BASE_IMAGE=${2:-busybox}
+
+echo Building $PHP_VERSION $BASE_IMAGE
+
+docker build -t wpengine/php:$VERSION-$BASE_IMAGE -f Dockerfile.php$VERSION.$BASE_IMAGE .

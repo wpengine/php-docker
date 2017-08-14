@@ -1,6 +1,6 @@
 # PHP Docker Images
 
-These images extend the [offical php-fpm images](https://github.com/docker-library/php/blob/76a1c5ca161f1ed6aafb2c2d26f83ec17360bc68/7.1/fpm/alpine/Dockerfile) with PHP extensions in use on the WP Engine Platform. They are based on Alpine Linux.
+These images are built directly from source with PHP extensions in use on the WP Engine Platform.
 
 # Updates & Prebuilt Images
 
@@ -10,27 +10,57 @@ These images are configured as Automated builds on [Docker Hub](https://hub.dock
 
 By default, this will run php-fpm and listen for FastCGI connections on port 9000.
 
-    docker run -d -p 9000:9000 wpengine/php:7.0
+    docker run -d -p 9000:9000 wpengine/php:7.0-busybox
 
 # Building
 
-    ./build.sh 5.6
-    ./build.sh 7.0
-    ./build.sh 7.1
-    
+## Alpine (musl)
+    ./build.sh 5.6 alpine
+    ./build.sh 7.0 alpine
+    ./build.sh 7.1 alpine
+## Busybox (glibc)
+    ./build.sh 5.6 busybox
+    ./build.sh 7.0 busybox
+    ./build.sh 7.1 busybox
+
+The default build type is `busybox`.
+
 OR 
-    
-    docker build -t wpengine/php:7.1 -f Dockerfile.php7.1 .
-    docker build -t wpengine/php:7.0 -f Dockerfile.php7.0 .
-    docker build -t wpengine/php:5.6 -f Dockerfile.php5.6 .
+
+### _For alpine:_
+
+    docker build -t wpengine/php:7.0-alpine -f Dockerfile.php7.0.alpine .
+
+### _For busybox:_
+
+    docker build -t wpengine/php:7.0-busybox -f Dockerfile.php.busybox .  \
+    --build-arg PHP_VERSION=7.0.22 --build-arg VERSION=7.0 \
+    --build-arg PHP_SHA256={...} --build-arg GPG_KEY1={...} \
+    --build-arg GPG_KEY2={...} --build-arg PHP_EXT_SUFFIX={...};
+
+Note that the `busybox` version of the dockerfile requires additional `--build-arg` params that can be found in the `.build.sh` file. 
+
+# Configuration Files
+
+### php-fpm
+```
+/usr/local/etc/php-fpm.conf
+```
+### php.ini
+```
+/usr/local/etc/php/php.ini
+```
+### Extensions
+```
+/usr/local/etc/php/conf.d/{extension_name}.ini
+```
 
 # New Relic
 
-As part of this container we install latest version of the New Relic php agent. The New Relic daemon should be run in a separate container and the daemon socket should be mounted on /tmp/.newrelic.sock.  The socket location can be changed by setting newrelic.daemon.port.
+As part of this container we install latest version of the New Relic php agent. The New Relic daemon should be run in a separate container and the daemon socket should be mounted on /run/newrelic/newrelic.sock.  The socket location can be changed by setting newrelic.daemon.port.
 
 ```
 RUN { \
-		echo "extension=newrelic.so"; \
-		echo "newrelic.daemon.port=/var/tmp/newrelic.sock"; \
-	} > /usr/local/etc/php/conf.d/docker-php-ext-newrelic.ini
+		echo "newrelic.daemon.port=/run/newrelic/newrelic.sock"; \
+	} > /usr/local/etc/php/conf.d/newrelic.ini
 ```
