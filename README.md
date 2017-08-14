@@ -12,7 +12,7 @@ The Busybox images are compiled from source downloaded from PHP.net. The compile
 
 # Updates & Prebuilt Images
 
-These images are configured as Automated builds on [Docker Cloud](https://cloud.docker.com/app/wpengine/repository/docker/wpengine/php).  New automated builds are triggered by updates to master branch in the official PHP repo.
+These images are configured as Automated builds on [Docker Cloud](https://cloud.docker.com/app/wpengine/repository/docker/wpengine/php).
 
 # Running
 
