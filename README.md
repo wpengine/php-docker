@@ -1,10 +1,18 @@
 # PHP Docker Images
 
-These images are built directly from source with PHP extensions in use on the WP Engine Platform.
+These docker images provide each major version of PHP (currently 5.6, 70 and 7.1) with support for various extensions required for WordPress and the WP Engine Platform.
+
+There are two main groups of images provided here:
+ - Alpine
+ - Busybox
+
+The Alpine images are based on the precompiled php-fpm-alpine images available at https://hub.docker.com/_/php/. The compiler used in Alpine is `musl` (instead of glibc) and all extensions used must be able to compile using musl as well. Currently, ionCube does not provibe a musl-based extension which created the need for an alternative set of images using glibc.
+
+The Busybox images are compiled from source downloaded from PHP.net. The compiler used is glibc which allows the ionCube extension (and any other glibc-only extensions) to work.
 
 # Updates & Prebuilt Images
 
-These images are configured as Automated builds on [Docker Hub](https://hub.docker.com/r/wpengine/php/).  New automated builds are triggered by updates to the official PHP repo.
+These images are configured as Automated builds on [Docker Cloud](https://cloud.docker.com/app/wpengine/repository/docker/wpengine/php).  New automated builds are triggered by updates to master branch in the official PHP repo.
 
 # Running
 
@@ -27,24 +35,24 @@ The default build type is `busybox`.
 
 OR 
 
+docker build -t wpengine/php:$VERSION-$BASE_IMAGE -f Dockerfile.php$VERSION.$BASE_IMAGE .
+
 ### _For alpine:_
 
     docker build -t wpengine/php:7.0-alpine -f Dockerfile.php7.0.alpine .
 
 ### _For busybox:_
 
-    docker build -t wpengine/php:7.0-busybox -f Dockerfile.php.busybox .  \
-    --build-arg PHP_VERSION=7.0.22 --build-arg VERSION=7.0 \
-    --build-arg PHP_SHA256={...} --build-arg GPG_KEY1={...} \
-    --build-arg GPG_KEY2={...} --build-arg PHP_EXT_SUFFIX={...};
-
-Note that the `busybox` version of the dockerfile requires additional `--build-arg` params that can be found in the `.build.sh` file. 
+    docker build -t wpengine/php:7.0-busybox -f Dockerfile.php7.0.busybox .
 
 # Configuration Files
+
+Before using any of these images in production, be sure to override the default configs found in the following locations. The default values are intended for development and testing, not production deployment.
 
 ### php-fpm
 ```
 /usr/local/etc/php-fpm.conf
+/usr/local/etc/php-fpm.d/www.conf
 ```
 ### php.ini
 ```
@@ -60,7 +68,5 @@ Note that the `busybox` version of the dockerfile requires additional `--build-a
 As part of this container we install latest version of the New Relic php agent. The New Relic daemon should be run in a separate container and the daemon socket should be mounted on /run/newrelic/newrelic.sock.  The socket location can be changed by setting newrelic.daemon.port.
 
 ```
-RUN { \
-		echo "newrelic.daemon.port=/run/newrelic/newrelic.sock"; \
-	} > /usr/local/etc/php/conf.d/newrelic.ini
+RUN echo "newrelic.daemon.port=/run/newrelic/newrelic.sock" >> /usr/local/etc/php/conf.d/newrelic.ini
 ```
