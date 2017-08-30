@@ -6,9 +6,9 @@ There are two main groups of images provided here:
  - Alpine
  - Busybox
 
-The Alpine images are based on the precompiled php-fpm-alpine images available at https://hub.docker.com/_/php/. The compiler used in Alpine is `musl` (instead of glibc) and all extensions used must be able to compile using musl as well. Currently, ionCube does not provibe a musl-based extension which created the need for an alternative set of images using glibc.
+The Alpine images are based on the precompiled php-fpm-alpine images available at https://hub.docker.com/_/php/. The gcc library used by Alpine is `musl` (instead of glibc) and all extensions used must be able to compile using musl as well. Currently, ionCube does not provibe a musl-based extension which created the need for an alternative set of images using glibc.
 
-The Busybox images are compiled from source downloaded from PHP.net. The compiler used is glibc which allows the ionCube extension (and any other glibc-only extensions) to work.
+The Busybox images are compiled from source downloaded from PHP.net. The library used is glibc which allows the ionCube extension (and any other glibc-only extensions) to work.
 
 # Updates & Prebuilt Images
 
