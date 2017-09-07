@@ -20,7 +20,7 @@ mkdir -p /usr/src
 cd /usr/src
 
 # Find out from PHP.net what the latest stable release info is
-curl -o php.json http://php.net/releases/active.php
+curl -o php.json https://secure.php.net/releases/active.php
 
 # VERSION is 5.6, 7.0 or 7.1
 # Grab the first digit to get the major version
