@@ -9,7 +9,8 @@ ENV PHP_EXT_SUFFIX=20131226
 
 ADD scripts/*.sh /usr/local/bin/
 
-RUN build-php.sh
+RUN set -ex; \
+	build-php.sh;
 
 FROM busybox:glibc
 ENV PHP_VERSION=5.6.31
