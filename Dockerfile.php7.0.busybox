@@ -14,7 +14,7 @@ RUN set -ex; \
 
 FROM busybox:glibc
 
-ENV PHP_VERSION=7.0.22
+ENV PHP_VERSION=7.0.23
 
 WORKDIR /
 
