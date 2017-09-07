@@ -13,6 +13,7 @@ RUN set -ex; \
 FROM busybox:glibc
 
 WORKDIR /
+
 COPY --from=builder /usr/src/php/.deploy/. .
 # Some minimal config for php-fpm
 COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
