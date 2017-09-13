@@ -95,3 +95,5 @@ RUN set -ex; \
 	{ \
 		echo "extension=newrelic.so"; \
 	} > /usr/local/etc/php/conf.d/docker-php-ext-newrelic.ini
+
+COPY php.ini /usr/local/etc/php/conf.d/php.ini
