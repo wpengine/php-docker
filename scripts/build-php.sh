@@ -4,15 +4,8 @@ PHP_INI_DIR=/usr/local/etc/php
 
 mkdir -p $PHP_INI_DIR/conf.d
 
-PHP_EXT_PATH=/usr/local/lib/php/extensions/no-debug-non-zts-$PHP_EXT_SUFFIX
-PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O2"
-PHP_CPPFLAGS="$PHP_CFLAGS"
-PHP_LDFLAGS="-Wl,-O1 -Wl,--hash-style=both -pie"
-PHP_URL="https://secure.php.net/get/php-$PHP_VERSION.tar.xz/from/this/mirror"
-PHP_ASC_URL="https://secure.php.net/get/php-$PHP_VERSION.tar.xz.asc/from/this/mirror"
-
 apt-get update && apt-get install -y --no-install-recommends \
-        autoconf build-essential ca-certificates curl dirmngr dpkg-dev file g++ gcc gettext gnupg2 \
+        autoconf build-essential ca-certificates curl dirmngr dpkg-dev file g++ gcc gettext gnupg2 jq \
         libbsd-dev libbz2-dev libc-client2007e-dev libc-dev libcurl3 libcurl3-dev libcurl4-openssl-dev \
         libedit-dev libedit2 libicu-dev libjpeg-dev libkrb5-dev libldap2-dev libmagick++-dev \
         libmagickwand-dev libmcrypt-dev libmemcached-dev libpcre3-dev libpng-dev libsqlite3-0 \
@@ -25,6 +18,30 @@ cp /usr/lib/libc-client.so.2007e.0 /usr/lib/x86_64-linux-gnu/libc-client.a
 # Build and install core PHP
 mkdir -p /usr/src
 cd /usr/src
+
+# Find out from PHP.net what the latest stable release info is
+curl -o php.json https://secure.php.net/releases/active.php
+
+# VERSION is 5.6, 7.0 or 7.1
+# Grab the first digit to get the major version
+MAJOR=`echo $VERSION | cut -c1`
+
+# Parse the JSON from PHP.net
+# Get the JSON block for the current version
+PHP_JSON=`cat php.json | \
+  jq --arg MAJOR "$MAJOR" '.[$MAJOR]' -r | \
+  jq --arg VERSION "$VERSION" '.[$VERSION]' -r`
+# Parse the current stable version
+PHP_VERSION=`echo $PHP_JSON | jq '.version' -r`
+# Parse the sha256 hash for the download verification
+PHP_SHA256=`echo $PHP_JSON | jq '.source[] | select(.filename | endswith("xz")) | .sha256' -r`
+
+PHP_EXT_PATH=/usr/local/lib/php/extensions/no-debug-non-zts-$PHP_EXT_SUFFIX
+PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O2"
+PHP_CPPFLAGS="$PHP_CFLAGS"
+PHP_LDFLAGS="-Wl,-O1 -Wl,--hash-style=both -pie"
+PHP_URL="https://secure.php.net/get/php-$PHP_VERSION.tar.xz/from/this/mirror"
+PHP_ASC_URL="https://secure.php.net/get/php-$PHP_VERSION.tar.xz.asc/from/this/mirror"
 
 # Download and verify PHP source
 wget -O php.tar.xz "$PHP_URL"
@@ -44,8 +61,8 @@ if [ -n "$PHP_ASC_URL" ]; then
 fi
 tar Jxvf php.tar.xz
 rm php.tar.xz.asc php.tar.xz
-
-cd /usr/src/php-$PHP_VERSION/
+mv php-$PHP_VERSION php
+cd /usr/src/php/
 ADDITIONAL_OPTIONS=''
 if [ $VERSION = "5.6" ]; then ADDITIONAL_OPTIONS="--with-mysql"; fi;
 ./configure --build="x86_64-linux-gnu" --enable-fpm --enable-static --disable-shared \
@@ -71,7 +88,7 @@ for ext in $PECL_MODULES; do
         rm -Rf $ext*
 done
 
-cd /usr/src/php-$PHP_VERSION/
+cd /usr/src/php/
 
 # Download the ioncube loader extension
 curl --connect-timeout 10 -o ioncube.tar.gz -fSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"
@@ -106,7 +123,7 @@ cp /usr/local/include/php/main/php_version.h usr/local/include/php/main/.
 cp $PHP_EXT_PATH/*.so .$PHP_EXT_PATH/.
 # Use the default configs provided by the build. Downstream containers can overwrite
 # these as needed.
-cp /usr/src/php-$PHP_VERSION/php.ini-development usr/local/etc/php/php.ini
+cp /usr/src/php/php.ini-development usr/local/etc/php/php.ini
 
 # Put the php-fpm and php binaries in the core runtime dependencies list
 echo "/usr/local/sbin/php-fpm" > .rundepscore
