@@ -85,12 +85,7 @@ RUN set -ex; \
 		redis \
 		ssh2 \
 		uopz \
-	; \
-	rm -rf /tmp/pear/; \
-	rm -rf /usr/share/doc /usr/share/man /usr/share/perl; \
-	rm -rf /usr/lib/gcc /usr/lib/python2.7; \
-	cd /usr/local/etc/php; \
-	php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
+	;
 
 RUN set -ex; \
 	\
@@ -115,9 +110,9 @@ RUN set -ex ; \
 
 COPY php.ini /usr/local/etc/php/conf.d/php.ini
 
+# Now that all the modules are built/downloaded, use the original php:7.0-fpm image and
+# install only the runtime dependencies with the new modules and config files.
 FROM php:7.0-fpm
-
-ENV PHP_VERSION=7.0.22
 
 WORKDIR /
 
@@ -126,6 +121,7 @@ RUN set -ex ; \
 	apt-get update && apt-get install -y --no-install-recommends \
         libpng12-0 libicu52 libmcrypt4 libxslt1.1 libmagickwand-6.q16-2 \
 		libmemcached11 libmemcachedutil2 libc-client2007e; \
+	rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
 	cd /usr/local/etc/php; \
 	php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
 
