@@ -119,6 +119,7 @@ RUN set -ex ; \
 
 COPY --from=builder /usr/local/lib/php/extensions/no-debug-non-zts-20131226/ /usr/local/lib/php/extensions/no-debug-non-zts-20131226/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+COPY --from=builder /usr/sbin/sendmail /usr/sbin/sendmail
 # Some minimal config for php-fpm
 COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
 
