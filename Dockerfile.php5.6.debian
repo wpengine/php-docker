@@ -1,0 +1,127 @@
+FROM php:5.6-fpm as builder
+
+RUN set -ex; \
+	\
+	apt-get update; \
+	apt-get install -y \
+		autoconf \
+		build-essential \
+		libbsd-dev \
+		libbz2-dev \
+		libc-client2007e-dev \
+		libc6-dev \
+		libcurl3 \
+		libcurl4-openssl-dev \
+		libedit-dev \
+		libedit2 \
+		libicu-dev \
+		libjpeg-dev \
+		libkrb5-dev \
+		libldap2-dev \
+		libldb-dev \
+		libmagick++-dev \
+		libmagickwand-dev \
+		libmcrypt-dev \
+		libmemcached-dev \
+		libpcre3-dev \
+		libpng-dev \
+		libpng12-dev \
+		libsqlite3-0 \
+		libsqlite3-dev \
+		libssh-dev \
+		libssh2-1-dev \
+		libssl-dev \
+		libtinfo-dev \
+		libtool \
+		libxml2 \
+		libxml2-dev \
+		libxslt-dev \
+		libxslt1-dev \
+		sendmail \
+	; \
+	docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu; \
+	docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr; \
+	docker-php-ext-configure imap --with-kerberos --with-imap-ssl; \
+	docker-php-ext-install \
+		bcmath \	
+		bz2 \
+		calendar \
+		dba \
+		exif \
+		gd \
+		gettext \
+		imap \
+		intl \
+		ldap \
+		mcrypt \
+		mysql \
+		mysqli \
+		opcache \
+		pdo_mysql \
+		shmop \
+		soap \
+		sockets \
+		sysvmsg \
+		sysvsem \
+		sysvshm \
+		wddx \
+		xmlrpc \
+		xsl \ 
+		zip \
+	; \
+	pecl install \
+		igbinary-2.0.1 \
+		imagick-3.4.3 \
+		memcached-2.2.0 \
+		msgpack-0.5.7 \
+		redis-3.1.3 \
+		runkit-1.0.4 \
+	; \
+	echo "\n" | pecl install ssh2-0.13; \
+	docker-php-ext-enable --ini-name pecl.ini \
+		igbinary \
+		imagick \
+		memcached \
+		msgpack \
+		redis \
+		runkit \
+		ssh2 \
+	; \
+	curl --connect-timeout 10 -o ioncube.tar.gz -kfSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
+	tar -zxvf ioncube.tar.gz; \
+	cp ioncube/ioncube_loader_lin_5.6.so /usr/local/lib/php/extensions/no-debug-non-zts-20131226/ioncube.so; \
+	rm -Rf ioncube*; \
+	NR_VERSION="$( curl --connect-timeout 10 -skS https://download.newrelic.com/php_agent/release/ | sed -n 's/.*>\(.*linux\).tar.gz<.*/\1/p')"; \
+	curl --connect-timeout 10 -o nr.tar.gz -kfSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
+	tar -xf nr.tar.gz; \
+	cp $NR_VERSION/agent/x64/newrelic-20131226.so /usr/local/lib/php/extensions/no-debug-non-zts-20131226/newrelic.so; \
+	rm -rf newrelic-php5* nr.tar.gz; \
+	echo "zend_extension=ioncube.so" > /usr/local/etc/php/conf.d/01-ioncube.ini; \
+	echo "extension=newrelic.so" > /usr/local/etc/php/conf.d/10-newrelic.ini; \
+	echo "runkit.internal_override=1" > /usr/local/etc/php/conf.d/10-runkit.ini;
+
+COPY php.ini /usr/local/etc/php/conf.d/php.ini
+
+# Now that all the modules are built/downloaded, use the original php:5.6-fpm image and
+# install only the runtime dependencies with the new modules and config files.
+FROM php:5.6-fpm
+
+WORKDIR /
+
+RUN set -ex ; \
+	\
+	apt-get update && apt-get install -y --no-install-recommends \
+        libpng12-0 libicu52 libmcrypt4 libxslt1.1 libmagickwand-6.q16-2 \
+		libmemcached11 libmemcachedutil2 libc-client2007e; \
+	rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
+	cd /usr/local/etc/php; \
+	php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
+
+COPY --from=builder /usr/local/lib/php/extensions/no-debug-non-zts-20131226/ /usr/local/lib/php/extensions/no-debug-non-zts-20131226/
+COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+COPY --from=builder /usr/sbin/sendmail /usr/sbin/sendmail
+# Some minimal config for php-fpm
+COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
+
+EXPOSE 9000
+CMD ["php-fpm"]
