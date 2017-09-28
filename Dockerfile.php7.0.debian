@@ -107,12 +107,6 @@ RUN set -ex; \
 	rm -Rf ioncube*; \
 	echo "zend_extension=ioncube.so" > /usr/local/etc/php/conf.d/01-ioncube.ini;
 
-RUN set -ex; \
-	\
-	curl --connect-timeout 10 -o /busybox_SENDMAIL -fkSL "https://busybox.net/downloads/binaries/1.27.1-i686/busybox_SENDMAIL"; \
-	chmod 755 /busybox_SENDMAIL;
-
-
 COPY php.ini /usr/local/etc/php/conf.d/php.ini
 
 # Now that all the modules are built/downloaded, use the original php:7.0-fpm image and
@@ -125,14 +119,13 @@ RUN set -ex ; \
 	\
 	apt-get update && apt-get install -y --no-install-recommends \
         libpng12-0 libicu52 libmcrypt4 libxslt1.1 libmagickwand-6.q16-2 \
-		libmemcached11 libmemcachedutil2 libc-client2007e; \
+		libmemcached11 libmemcachedutil2 libc-client2007e sendmail; \
 	rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
 	cd /usr/local/etc/php; \
 	php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
 
 COPY --from=builder /usr/local/lib/php/extensions/no-debug-non-zts-20151012/ /usr/local/lib/php/extensions/no-debug-non-zts-20151012/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
-COPY --from=builder /busybox_SENDMAIL /usr/sbin/sendmail
 
 # Some minimal config for php-fpm
 COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
