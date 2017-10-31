@@ -121,6 +121,7 @@ COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 
 # Some minimal config for php-fpm
 COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
+COPY ssmtp.conf /etc/ssmtp/ssmtp.conf
 
 EXPOSE 9000
 CMD ["php-fpm"]

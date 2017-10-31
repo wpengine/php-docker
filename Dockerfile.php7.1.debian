@@ -99,7 +99,7 @@ RUN set -ex; \
 	rm -rf newrelic-php5* nr.tar.gz; \
 	echo "extension=newrelic.so" > /usr/local/etc/php/conf.d/newrelic.ini;
 
-RUN set -ex ; \
+RUN set -ex; \
 	\
 	curl --connect-timeout 10 -o ioncube.tar.gz -fkSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
 	tar -zxvf ioncube.tar.gz; \
@@ -129,6 +129,7 @@ COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 
 # Some minimal config for php-fpm
 COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
+COPY ssmtp.conf /etc/ssmtp/ssmtp.conf
 
 EXPOSE 9000
 CMD ["php-fpm"]
