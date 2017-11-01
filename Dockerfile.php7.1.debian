@@ -99,7 +99,7 @@ RUN set -ex; \
 	rm -rf newrelic-php5* nr.tar.gz; \
 	echo "extension=newrelic.so" > /usr/local/etc/php/conf.d/newrelic.ini;
 
-RUN set -ex ; \
+RUN set -ex; \
 	\
 	curl --connect-timeout 10 -o ioncube.tar.gz -fkSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
 	tar -zxvf ioncube.tar.gz; \
@@ -119,7 +119,7 @@ RUN set -ex ; \
 	\
 	apt-get update && apt-get install -y --no-install-recommends \
         libpng12-0 libicu52 libmcrypt4 libxslt1.1 libmagickwand-6.q16-2 \
-		libmemcached11 libmemcachedutil2 libc-client2007e sendmail; \
+		libmemcached11 libmemcachedutil2 libc-client2007e ssmtp; \
 	rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
 	cd /usr/local/etc/php; \
 	php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
@@ -129,6 +129,7 @@ COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 
 # Some minimal config for php-fpm
 COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
+COPY ssmtp.conf /etc/ssmtp/ssmtp.conf
 
 EXPOSE 9000
 CMD ["php-fpm"]
