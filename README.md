@@ -31,7 +31,7 @@ By default, this will run php-fpm and listen for FastCGI connections on port 900
     ./build.sh 7.0 busybox
     ./build.sh 7.1 busybox
 
-The default build type is `busybox`.
+The default build type is `alpine`.
 
 OR 
 
