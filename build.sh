@@ -2,7 +2,7 @@
 
 # setting default version to 7.1
 VERSION=${1:-7.1}
-BASE_IMAGE=${2:-alpine}
+BASE_IMAGE=${2:-debian}
 
 echo Building $PHP_VERSION $BASE_IMAGE
 
