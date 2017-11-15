@@ -31,6 +31,7 @@ RUN set -ex; \
 		libssl-dev \
 		libtinfo-dev \
 		libtool \
+		libwebp-dev \
 		libxml2 \
 		libxml2-dev \
 		libxpm-dev \
@@ -42,6 +43,7 @@ RUN set -ex; \
 		--with-png-dir=/usr \
 		--with-jpeg-dir=/usr \
 		--with-freetype-dir=/usr \
+		--with-webp-dir=/usr \
 		--with-xpm-dir=/usr \
 		--with-vpx-dir=/usr; \
 	docker-php-ext-configure imap --with-kerberos --with-imap-ssl; \
@@ -124,7 +126,7 @@ RUN set -ex ; \
 	\
 	apt-get update && apt-get install -y --no-install-recommends \
         libpng12-0 libicu52 libmcrypt4 libxslt1.1 libmagickwand-6.q16-2 \
-		libmemcached11 libmemcachedutil2 libc-client2007e libxpm-dev ssmtp; \
+		libmemcached11 libmemcachedutil2 libc-client2007e libxpm-dev libwebp-dev ssmtp; \
 	rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
 	cd /usr/local/etc/php; \
 	php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
