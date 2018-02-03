@@ -134,6 +134,24 @@ RUN set -ex ; \
 COPY --from=builder /usr/local/lib/php/extensions/no-debug-non-zts-20160303/ /usr/local/lib/php/extensions/no-debug-non-zts-20160303/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 
+RUN pear install --alldeps \
+		Auth_SASL \
+		Auth_SASL2-beta \
+		Benchmark \
+		pear.php.net/Console_Color2-0.1.2 \
+		Console_Table \
+		HTTP_OAuth-0.3.1 \
+		HTTP_Request2 \
+		Log \
+		Mail \
+		MDB2 \
+		Net_GeoIP \
+		Net_SMTP \
+		Net_Socket \
+		XML_RPC2 \
+		pear.symfony.com/YAML \
+	;
+
 # Some minimal config for php-fpm
 COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
 COPY ssmtp.conf /etc/ssmtp/ssmtp.conf
