@@ -107,8 +107,6 @@ RUN set -ex; \
 	echo "extension=newrelic.so" > /usr/local/etc/php/conf.d/10-newrelic.ini; \
 	echo "runkit.internal_override=1" > /usr/local/etc/php/conf.d/10-runkit.ini;
 
-COPY php.ini /usr/local/etc/php/conf.d/php.ini
-
 # Now that all the modules are built/downloaded, use the original php:5.6-fpm image and
 # install only the runtime dependencies with the new modules and config files.
 FROM php:5.6-fpm
@@ -118,8 +116,18 @@ WORKDIR /
 RUN set -ex ; \
 	\
 	apt-get update && apt-get install -y --no-install-recommends \
-        libpng12-0 libicu52 libmcrypt4 libxslt1.1 libmagickwand-6.q16-2 \
-		libmemcached11 libmemcachedutil2 libc-client2007e libxpm-dev libwebp-dev libvpx-dev ssmtp; \
+		libc-client2007e \
+		libicu52 \
+		libmagickwand-6.q16-2 \
+		libmcrypt4 \
+		libmemcached11 \
+		libmemcachedutil2 \
+		libwebp-dev \
+		libxpm-dev \
+		libxslt1.1 \
+		ssmtp \
+        libpng12-0 \
+		; \
 	rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
 	cd /usr/local/etc/php; \
 	php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
@@ -145,9 +153,41 @@ RUN pear install --alldeps \
 		pear.symfony.com/YAML \
 	;
 
-# Some minimal config for php-fpm
-COPY www.conf-default /usr/local/etc/php-fpm.d/www.conf
-COPY ssmtp.conf /etc/ssmtp/ssmtp.conf
+RUN set -ex \
+	&& { \
+		echo '[global]'; \
+		echo 'daemonize = no'; \
+		echo 'error_log = /proc/self/fd/2'; \
+		echo; \
+		echo '[www]'; \
+		echo 'listen = [::]:9000'; \
+		echo 'listen.owner = www-data'; \
+		echo 'listen.group = www-data'; \
+		echo; \
+		echo 'user = www-data'; \
+		echo 'group = www-data'; \
+		echo; \
+		echo 'access.log = /proc/self/fd/2'; \
+		echo; \
+		echo 'pm = static'; \
+		echo 'pm.max_children = 1'; \
+		echo 'pm.start_servers = 1'; \
+		echo 'request_terminate_timeout = 65s'; \
+		echo 'pm.max_requests = 1000'; \
+		echo 'catch_workers_output = yes'; \
+	} | tee /usr/local/etc/php-fpm.d/www.conf \
+	&& { \
+		echo 'FromLineOverride=YES'; \
+		echo 'mailhub=127.0.0.1'; \
+		echo 'UseTLS=NO'; \
+		echo 'UseSTARTTLS=NO'; \
+	} | tee /etc/ssmtp/ssmtp.conf \
+		&& { \
+		echo '[PHP]'; \
+		echo 'log_errors = On'; \
+		echo 'error_log = /dev/stderr'; \
+	} | tee /usr/local/etc/php/conf.d/php.ini \
+	;
 
 EXPOSE 9000
 CMD ["php-fpm"]
