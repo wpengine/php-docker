@@ -15,6 +15,7 @@ RUN set -ex; \
 		libcurl4-openssl-dev \
 		libedit-dev \
 		libedit2 \
+		libgmp-dev \
 		libicu-dev \
 		libjpeg-dev \
 		libkrb5-dev \
@@ -37,6 +38,7 @@ RUN set -ex; \
 		libxpm-dev \
 		libxslt1-dev \
 	; \
+	apt-get clean; \
 	rm -rf /var/lib/apt/lists/*; \
 	\
 	docker-php-ext-configure gd \
@@ -49,13 +51,14 @@ RUN set -ex; \
 	docker-php-ext-configure imap --with-kerberos --with-imap-ssl; \
 	docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu; \
 	docker-php-ext-install \
-		bcmath \	
+		bcmath \
 		bz2 \
 		calendar \
 		dba \
 		exif \
 		gd \
 		gettext \
+		gmp \
 		imap \
 		intl \
 		ldap \
@@ -71,7 +74,7 @@ RUN set -ex; \
 		sysvshm \
 		wddx \
 		xmlrpc \
-		xsl \ 
+		xsl \
 		zip \
 	; \
 	pecl install \
@@ -134,7 +137,7 @@ RUN set -ex ; \
 		libxpm-dev \
 		libxslt1.1 \
 		ssmtp \
-        libpng12-0 \
+		libpng12-0 \
 		; \
 	rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
 	cd /usr/local/etc/php; \
