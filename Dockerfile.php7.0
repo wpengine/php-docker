@@ -1,121 +1,122 @@
 FROM php:7.0-fpm as builder
 
 RUN set -ex; \
-	\
-	apt-get update; \
-	apt-get install -y \
-		autoconf \
-		build-essential \
-		libbsd-dev \
-		libbz2-dev \
-		libc-client2007e-dev \
-		libc-dev \
-		libcurl3 \
-		libcurl3-dev \
-		libcurl4-openssl-dev \
-		libedit-dev \
-		libedit2 \
-		libgmp-dev \
-		libicu-dev \
-		libjpeg-dev \
-		libkrb5-dev \
-		libldap2-dev \
-		libmagick++-dev \
-		libmagickwand-dev \
-		libmcrypt-dev \
-		libmemcached-dev \
-		libpcre3-dev \
-		libpng-dev \
-		libsqlite3-0 \
-		libsqlite3-dev \
-		libssh2-1-dev \
-		libssl-dev \
-		libtinfo-dev \
-		libtool \
-		libwebp-dev \
-		libxml2 \
-		libxml2-dev \
-		libxpm-dev \
-		libxslt1-dev \
-	; \
-	apt-get clean; \
-	rm -rf /var/lib/apt/lists/*; \
-	ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include; \
-	docker-php-ext-configure gd \
-		--with-png-dir=/usr \
-		--with-jpeg-dir=/usr \
-		--with-freetype-dir=/usr \
-		--with-webp-dir=/usr \
-		--with-xpm-dir=/usr \
-		--with-vpx-dir=/usr; \
-	docker-php-ext-configure imap --with-kerberos --with-imap-ssl; \
-	docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu; \
-	docker-php-ext-install \
-		bcmath \
-		bz2 \
-		calendar \
-		dba \
-		exif \
-		gd \
-		gettext \
-		gmp \
-		imap \
-		intl \
-		ldap \
-		mcrypt \
-		mysqli \
-		opcache \
-		pdo_mysql \
-		shmop \
-		soap \
-		sockets \
-		sysvmsg \
-		sysvsem \
-		sysvshm \
-		wddx \
-		xmlrpc \
-		xsl \
-		zip \
-	; \
-	pecl install \
-		igbinary-2.0.1 \
-		imagick-3.4.3 \
-		memcached-3.0.3 \
-		msgpack-2.0.2 \
-		redis-3.1.3 \
-		uopz-5.0.2 \
-	; \
-	echo "\n" | pecl install ssh2-1.1.2; \
-	docker-php-ext-enable --ini-name pecl.ini \
-		igbinary \
-		imagick \
-		memcached \
-		msgpack \
-		redis \
-		ssh2 \
-		uopz \
-	;
+    \
+    apt-get update; \
+    apt-get install -y \
+        autoconf \
+        build-essential \
+        libbsd-dev \
+        libbz2-dev \
+        libc-client2007e-dev \
+        libc-dev \
+        libcurl3 \
+        libcurl3-dev \
+        libcurl4-openssl-dev \
+        libedit-dev \
+        libedit2 \
+        libgmp-dev \
+        libicu-dev \
+        libjpeg-dev \
+        libkrb5-dev \
+        libldap2-dev \
+        libmagick++-dev \
+        libmagickwand-dev \
+        libmcrypt-dev \
+        libmemcached-dev \
+        libpcre3-dev \
+        libpng-dev \
+        libsqlite3-0 \
+        libsqlite3-dev \
+        libssh2-1-dev \
+        libssl-dev \
+        libtinfo-dev \
+        libtool \
+        libwebp-dev \
+        libxml2 \
+        libxml2-dev \
+        libxpm-dev \
+        libxslt1-dev \
+    ; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*; \
+    ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include; \
+    docker-php-ext-configure gd \
+        --with-png-dir=/usr \
+        --with-jpeg-dir=/usr \
+        --with-freetype-dir=/usr \
+        --with-webp-dir=/usr \
+        --with-xpm-dir=/usr \
+        --with-vpx-dir=/usr; \
+    docker-php-ext-configure imap --with-kerberos --with-imap-ssl; \
+    docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu; \
+    docker-php-ext-install \
+        bcmath \
+        bz2 \
+        calendar \
+        dba \
+        exif \
+        gd \
+        gettext \
+        gmp \
+        gnupg \
+        imap \
+        intl \
+        ldap \
+        mcrypt \
+        mysqli \
+        opcache \
+        pdo_mysql \
+        shmop \
+        soap \
+        sockets \
+        sysvmsg \
+        sysvsem \
+        sysvshm \
+        wddx \
+        xmlrpc \
+        xsl \
+        zip \
+    ; \
+    pecl install \
+        igbinary-2.0.1 \
+        imagick-3.4.3 \
+        memcached-3.0.3 \
+        msgpack-2.0.2 \
+        redis-3.1.3 \
+        uopz-5.0.2 \
+    ; \
+    echo "\n" | pecl install ssh2-1.1.2; \
+    docker-php-ext-enable --ini-name pecl.ini \
+        igbinary \
+        imagick \
+        memcached \
+        msgpack \
+        redis \
+        ssh2 \
+        uopz \
+    ;
 
 RUN set -ex; \
-	\
-	NR_VERSION="$( \
-		curl --connect-timeout 10 -skS https://download.newrelic.com/php_agent/release/ \
-			| sed -n 's/.*>\(.*linux\).tar.gz<.*/\1/p' \
-	)"; \
-	curl --connect-timeout 10 -o nr.tar.gz -fkSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
-	tar -xf nr.tar.gz; \
-	cp $NR_VERSION/agent/x64/newrelic-20151012.so /usr/local/lib/php/extensions/no-debug-non-zts-20151012/newrelic.so; \
-	mkdir -p /var/log/newrelic; \
-	rm -rf newrelic-php5* nr.tar.gz; \
-	echo "extension=newrelic.so" > /usr/local/etc/php/conf.d/newrelic.ini;
+    \
+    NR_VERSION="$( \
+        curl --connect-timeout 10 -skS https://download.newrelic.com/php_agent/release/ \
+            | sed -n 's/.*>\(.*linux\).tar.gz<.*/\1/p' \
+    )"; \
+    curl --connect-timeout 10 -o nr.tar.gz -fkSL "https://download.newrelic.com/php_agent/release/$NR_VERSION.tar.gz"; \
+    tar -xf nr.tar.gz; \
+    cp $NR_VERSION/agent/x64/newrelic-20151012.so /usr/local/lib/php/extensions/no-debug-non-zts-20151012/newrelic.so; \
+    mkdir -p /var/log/newrelic; \
+    rm -rf newrelic-php5* nr.tar.gz; \
+    echo "extension=newrelic.so" > /usr/local/etc/php/conf.d/newrelic.ini;
 
 RUN set -ex; \
-	\
-	curl --connect-timeout 10 -o ioncube.tar.gz -fkSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
-	tar -zxvf ioncube.tar.gz; \
-	cp ioncube/ioncube_loader_lin_7.0.so /usr/local/lib/php/extensions/no-debug-non-zts-20151012/ioncube.so; \
-	rm -Rf ioncube*; \
-	echo "zend_extension=ioncube.so" > /usr/local/etc/php/conf.d/01-ioncube.ini;
+    \
+    curl --connect-timeout 10 -o ioncube.tar.gz -fkSL "https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"; \
+    tar -zxvf ioncube.tar.gz; \
+    cp ioncube/ioncube_loader_lin_7.0.so /usr/local/lib/php/extensions/no-debug-non-zts-20151012/ioncube.so; \
+    rm -Rf ioncube*; \
+    echo "zend_extension=ioncube.so" > /usr/local/etc/php/conf.d/01-ioncube.ini;
 
 # Now that all the modules are built/downloaded, use the original php:7.0-fpm image and
 # install only the runtime dependencies with the new modules and config files.
@@ -124,81 +125,81 @@ FROM php:7.0-fpm
 WORKDIR /
 
 RUN set -ex ; \
-	\
-	apt-get update && apt-get install -y --no-install-recommends \
-		libc-client2007e \
-		libicu52 \
-		libmagickwand-6.q16-2 \
-		libmcrypt4 \
-		libmemcached11 \
-		libmemcachedutil2 \
-		libvpx-dev \
-		libwebp-dev \
-		libxpm-dev \
-		libxslt1.1 \
-		ssmtp \
-		libpng12-0 \
-		; \
-	rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
-	cd /usr/local/etc/php; \
-	php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
+    \
+    apt-get update && apt-get install -y --no-install-recommends \
+        libc-client2007e \
+        libicu52 \
+        libmagickwand-6.q16-2 \
+        libmcrypt4 \
+        libmemcached11 \
+        libmemcachedutil2 \
+        libvpx-dev \
+        libwebp-dev \
+        libxpm-dev \
+        libxslt1.1 \
+        ssmtp \
+        libpng12-0 \
+        ; \
+    rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
+    cd /usr/local/etc/php; \
+    php-fpm -v 2>/dev/null | sed -E 's/PHP ([5|7].[0-9]{1,2}.[0-9]{1,2})(.*)/\1/g' | head -n1 > php_version.txt;
 
 COPY --from=builder /usr/local/lib/php/extensions/no-debug-non-zts-20151012/ /usr/local/lib/php/extensions/no-debug-non-zts-20151012/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 
 RUN pear install --alldeps \
-		Auth_SASL \
-		Auth_SASL2-beta \
-		Benchmark \
-		pear.php.net/Console_Color2-0.1.2 \
-		Console_Table \
-		HTTP_OAuth-0.3.1 \
-		HTTP_Request2 \
-		Log \
-		Mail \
-		MDB2 \
-		Net_GeoIP \
-		Net_SMTP \
-		Net_Socket \
-		XML_RPC2 \
-		pear.symfony.com/YAML \
-	;
+        Auth_SASL \
+        Auth_SASL2-beta \
+        Benchmark \
+        pear.php.net/Console_Color2-0.1.2 \
+        Console_Table \
+        HTTP_OAuth-0.3.1 \
+        HTTP_Request2 \
+        Log \
+        Mail \
+        MDB2 \
+        Net_GeoIP \
+        Net_SMTP \
+        Net_Socket \
+        XML_RPC2 \
+        pear.symfony.com/YAML \
+    ;
 
 RUN set -ex \
-	&& { \
-		echo '[global]'; \
-		echo 'daemonize = no'; \
-		echo 'error_log = /proc/self/fd/2'; \
-		echo; \
-		echo '[www]'; \
-		echo 'listen = [::]:9000'; \
-		echo 'listen.owner = www-data'; \
-		echo 'listen.group = www-data'; \
-		echo; \
-		echo 'user = www-data'; \
-		echo 'group = www-data'; \
-		echo; \
-		echo 'access.log = /proc/self/fd/2'; \
-		echo; \
-		echo 'pm = static'; \
-		echo 'pm.max_children = 1'; \
-		echo 'pm.start_servers = 1'; \
-		echo 'request_terminate_timeout = 65s'; \
-		echo 'pm.max_requests = 1000'; \
-		echo 'catch_workers_output = yes'; \
-	} | tee /usr/local/etc/php-fpm.d/www.conf \
-	&& { \
-		echo 'FromLineOverride=YES'; \
-		echo 'mailhub=127.0.0.1'; \
-		echo 'UseTLS=NO'; \
-		echo 'UseSTARTTLS=NO'; \
-	} | tee /etc/ssmtp/ssmtp.conf \
-		&& { \
-		echo '[PHP]'; \
-		echo 'log_errors = On'; \
-		echo 'error_log = /dev/stderr'; \
-	} | tee /usr/local/etc/php/conf.d/php.ini \
-	;
+    && { \
+        echo '[global]'; \
+        echo 'daemonize = no'; \
+        echo 'error_log = /proc/self/fd/2'; \
+        echo; \
+        echo '[www]'; \
+        echo 'listen = [::]:9000'; \
+        echo 'listen.owner = www-data'; \
+        echo 'listen.group = www-data'; \
+        echo; \
+        echo 'user = www-data'; \
+        echo 'group = www-data'; \
+        echo; \
+        echo 'access.log = /proc/self/fd/2'; \
+        echo; \
+        echo 'pm = static'; \
+        echo 'pm.max_children = 1'; \
+        echo 'pm.start_servers = 1'; \
+        echo 'request_terminate_timeout = 65s'; \
+        echo 'pm.max_requests = 1000'; \
+        echo 'catch_workers_output = yes'; \
+    } | tee /usr/local/etc/php-fpm.d/www.conf \
+    && { \
+        echo 'FromLineOverride=YES'; \
+        echo 'mailhub=127.0.0.1'; \
+        echo 'UseTLS=NO'; \
+        echo 'UseSTARTTLS=NO'; \
+    } | tee /etc/ssmtp/ssmtp.conf \
+        && { \
+        echo '[PHP]'; \
+        echo 'log_errors = On'; \
+        echo 'error_log = /dev/stderr'; \
+    } | tee /usr/local/etc/php/conf.d/php.ini \
+    ;
 
 EXPOSE 9000
 CMD ["php-fpm"]
