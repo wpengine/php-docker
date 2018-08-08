@@ -15,6 +15,7 @@ RUN set -ex; \
         libedit-dev \
         libedit2 \
         libgmp-dev \
+        libgpgme11-dev \
         libicu-dev \
         libjpeg-dev \
         libkrb5-dev \
@@ -26,10 +27,8 @@ RUN set -ex; \
         libmemcached-dev \
         libpcre3-dev \
         libpng-dev \
-        libpng12-dev \
         libsqlite3-0 \
         libsqlite3-dev \
-        libssh-dev \
         libssh2-1-dev \
         libssl-dev \
         libtinfo-dev \
@@ -39,7 +38,6 @@ RUN set -ex; \
         libxml2 \
         libxml2-dev \
         libxpm-dev \
-        libxslt-dev \
         libxslt1-dev \
     ; \
     apt-get clean; \
@@ -63,7 +61,6 @@ RUN set -ex; \
         gd \
         gettext \
         gmp \
-        gnupg \
         imap \
         intl \
         ldap \
@@ -84,6 +81,7 @@ RUN set -ex; \
         zip \
     ; \
     pecl install \
+        gnupg-1.4.0 \
         igbinary-2.0.1 \
         imagick-3.4.3 \
         memcached-2.2.0 \
@@ -93,6 +91,7 @@ RUN set -ex; \
     ; \
     echo "\n" | pecl install ssh2-0.13; \
     docker-php-ext-enable --ini-name pecl.ini \
+        gnupg \
         igbinary \
         imagick \
         memcached \
@@ -124,17 +123,18 @@ RUN set -ex ; \
     \
     apt-get update && apt-get install -y --no-install-recommends \
         libc-client2007e \
-        libicu52 \
-        libmagickwand-6.q16-2 \
+        libgpgme11 \
+        libicu57 \
+        libmagickwand-6.q16-3 \
         libmcrypt4 \
         libmemcached11 \
         libmemcachedutil2 \
-        libvpx-dev \
-        libwebp-dev \
-        libxpm-dev \
+        libpng16-16 \
+        libvpx4 \
+        libwebp6 \
+        libxpm4 \
         libxslt1.1 \
         ssmtp \
-        libpng12-0 \
         ; \
     rm -rf /tmp/pear /usr/share/doc /usr/share/man /usr/lib/gcc /var/lib/apt/lists/*; \
     cd /usr/local/etc/php; \
