@@ -184,6 +184,14 @@ RUN set -ex \
         echo 'pm.max_requests = 1000'; \
         echo 'catch_workers_output = yes'; \
     } | tee /usr/local/etc/php-fpm.d/www.conf \
+    && mkdir -p /usr/local/php/php/auto_prepends \
+    && { \
+        echo '<?php' \
+        echo 'if (function_exists("uopz_allow_exit")) {' \
+        echo '    uopz_allow_exit(true);' \
+        echo '}' \
+        echo '?>' \
+    } | tee /usr/local/php/php/auto_prepends/default_prepend.php \
     && { \
         echo 'FromLineOverride=YES'; \
         echo 'mailhub=127.0.0.1'; \
@@ -194,6 +202,7 @@ RUN set -ex \
         echo '[PHP]'; \
         echo 'log_errors = On'; \
         echo 'error_log = /dev/stderr'; \
+        echo 'auto_prepend_file = /usr/local/php/php/auto_prepends/default_prepend.php;' \
     } | tee /usr/local/etc/php/conf.d/php.ini \
     ;
 
