@@ -193,11 +193,11 @@ RUN set -ex \
     } | tee /usr/local/etc/php-fpm.d/www.conf \
     && mkdir -p /usr/local/php/php/auto_prepends \
     && { \
-        echo '<?php' \
-        echo 'if (function_exists("uopz_allow_exit")) {' \
-        echo '    uopz_allow_exit(true);' \
-        echo '}' \
-        echo '?>' \
+        echo '<?php'; \
+        echo 'if (function_exists("uopz_allow_exit")) {;' \
+        echo '    uopz_allow_exit(true);'; \
+        echo '}'; \
+        echo '?>'; \
     } | tee /usr/local/php/php/auto_prepends/default_prepend.php \
     && { \
         echo 'FromLineOverride=YES'; \
@@ -205,11 +205,11 @@ RUN set -ex \
         echo 'UseTLS=NO'; \
         echo 'UseSTARTTLS=NO'; \
     } | tee /etc/ssmtp/ssmtp.conf \
-        && { \
+    && { \
         echo '[PHP]'; \
         echo 'log_errors = On'; \
         echo 'error_log = /dev/stderr'; \
-        echo 'auto_prepend_file = /usr/local/php/php/auto_prepends/default_prepend.php;' \
+        echo 'auto_prepend_file = /usr/local/php/php/auto_prepends/default_prepend.php'; \
     } | tee /usr/local/etc/php/conf.d/php.ini \
     ;
 
